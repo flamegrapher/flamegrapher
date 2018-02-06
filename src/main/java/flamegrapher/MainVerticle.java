@@ -1,7 +1,6 @@
 package flamegrapher;
 
 import flamegrapher.backend.JavaFlightRecorder;
-import flamegrapher.model.Processes;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -12,7 +11,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 public class MainVerticle extends AbstractVerticle {
-    
+
     @Override
     public void start(Future<Void> fut) {
         JavaFlightRecorder jfr = new JavaFlightRecorder(vertx);
@@ -30,17 +29,48 @@ public class MainVerticle extends AbstractVerticle {
               .handler(rc -> {
                   jfr.list(newFuture(rc));
               });
-        
-        vertx.createHttpServer()
-        .requestHandler(router::accept)
-        .listen(config().getInteger("http.port", 8080), result -> {
-            if (result.succeeded()) {
-                fut.complete();
-            } else {
-                fut.fail(result.cause());
-            }
-        });
 
+        router.get("/api/start/:pid")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  jfr.start(pid, newFuture(rc));
+              });
+
+        router.get("/api/status/:pid")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  jfr.status(pid, newFuture(rc));
+              });
+
+        router.get("/api/dump/:pid/:recording")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  String recording = rc.request()
+                                       .getParam("recording");
+                  jfr.dump(pid, recording, newFuture(rc));
+              });
+
+        router.get("/api/stop/:pid/:recording")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  String recording = rc.request()
+                                       .getParam("recording");
+                  jfr.stop(pid, recording, newFuture(rc));
+              });
+
+        vertx.createHttpServer()
+             .requestHandler(router::accept)
+             .listen(config().getInteger("http.port", 8080), result -> {
+                 if (result.succeeded()) {
+                     fut.complete();
+                 } else {
+                     fut.fail(result.cause());
+                 }
+             });
     }
 
     private <T> Future<T> newFuture(RoutingContext rc) {
