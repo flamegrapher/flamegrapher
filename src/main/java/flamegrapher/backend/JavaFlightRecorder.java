@@ -34,7 +34,7 @@ public class JavaFlightRecorder implements Profiler {
     // e.g. profile for 60s this PID (fire and forget)
     // Result is pushed back when ready
 
-    private static final String LOCATION = "/Users/lgomes/gitclones/flamegrapher/";
+    private static final String LOCATION = "~/";
     private final Vertx vertx;
 
     public JavaFlightRecorder(Vertx vertx) {
@@ -69,7 +69,7 @@ public class JavaFlightRecorder implements Profiler {
         output(check, JavaFlightRecorder::bypass, handler);
         // TODO: Parse the recording
 
-        // NCELRND0380:flamegrapher lgomes$ jcmd 8683 JFR.check
+        // lgomes$ jcmd 8683 JFR.check
         // 8683:
         // Recording: recording=1 name="Recording 1" (running)
     }
