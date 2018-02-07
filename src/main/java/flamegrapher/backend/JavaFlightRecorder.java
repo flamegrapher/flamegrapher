@@ -3,8 +3,6 @@ package flamegrapher.backend;
 import static com.julienviet.childprocess.Process.spawn;
 import static java.util.Arrays.asList;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.function.Function;
 
 import com.julienviet.childprocess.Process;
