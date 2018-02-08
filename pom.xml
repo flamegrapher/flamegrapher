@@ -10,6 +10,7 @@
 	<properties>
 		<java.version>9</java.version>
 		<vertx.version>3.5.0</vertx.version>
+		<jmc.version>6.0.0.173472</jmc.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
@@ -106,6 +107,18 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.oracle.jmc</groupId>
+			<artifactId>com.oracle.jmc.common</artifactId>
+			<version>${jmc.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.oracle.jmc</groupId>
+			<artifactId>com.oracle.jmc.flightrecorder</artifactId>
+			<version>${jmc.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-unit</artifactId>
 			<version>${vertx.version}</version>
@@ -128,4 +141,11 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>repo</id>
+			<url>file://${project.basedir}/repo</url>
+		</repository>
+	</repositories>
 </project>
