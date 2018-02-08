@@ -6,6 +6,8 @@ import static java.util.Arrays.asList;
 import java.util.function.Function;
 
 import com.julienviet.childprocess.Process;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 
 import flamegrapher.model.Processes;
 import io.vertx.core.Future;
@@ -34,11 +36,14 @@ public class JavaFlightRecorder implements Profiler {
     // e.g. profile for 60s this PID (fire and forget)
     // Result is pushed back when ready
 
-    private static final String LOCATION = "~/";
+    // Add config
+
+    private final Config config;
     private final Vertx vertx;
 
     public JavaFlightRecorder(Vertx vertx) {
         this.vertx = vertx;
+        this.config = ConfigFactory.load();
     }
 
     @Override
@@ -80,11 +85,10 @@ public class JavaFlightRecorder implements Profiler {
 
     @Override
     public void dump(String pid, String recording, Future<JsonObject> handler) {
-        // TODO Auto-generated method stub
         // jcmd 8683 JFR.dump filename=./terst.jfr recording=1
         // jcmd 8683 JFR.dump
         // filename=/Users/lgomes/gitclones/flamegrapher/test.jfr recording=1
-        String filename = LOCATION + pid + "." + recording + ".jfr";
+        String filename = config.getString("flamegrapher.jfr-dump-path") + pid + "." + recording + ".jfr";
         spawn(vertx, "jcmd", asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording)).exitHandler(
                 status -> {
                     // TODO check status code!
