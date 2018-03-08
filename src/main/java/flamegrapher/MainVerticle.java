@@ -62,6 +62,15 @@ public class MainVerticle extends AbstractVerticle {
                   jfr.stop(pid, recording, newFuture(rc));
               });
 
+        router.get("/api/flames/:pid/:recording")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  String recording = rc.request()
+                                       .getParam("recording");
+                  jfr.flames(pid, recording, newFuture(rc));
+              });
+
         vertx.createHttpServer()
              .requestHandler(router::accept)
              .listen(config().getInteger("http.port", 8080), result -> {

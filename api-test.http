@@ -1,14 +1,16 @@
 curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/list'
 ###
 
-curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/start/8683'
+curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/start/98230'
 ###
 
-curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/status/8683'
+curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/status/98230'
 ###
 
-curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/dump/8683/5'
+curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/dump/98230/1'
 ###
 
-curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/stop/8683/5'
+curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/stop/98230/1'
 ###
+
+curl -X GET --header 'Accept: application/json' 'http://localhost:8080/api/flames/98230/1'

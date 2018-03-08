@@ -3,16 +3,20 @@ package flamegrapher.backend;
 import static com.julienviet.childprocess.Process.spawn;
 import static java.util.Arrays.asList;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.function.Function;
 
 import com.julienviet.childprocess.Process;
+import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
+import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import flamegrapher.backend.JsonOutputWriter.StackFrame;
 import flamegrapher.model.Processes;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class JavaFlightRecorder implements Profiler {
@@ -73,7 +77,6 @@ public class JavaFlightRecorder implements Profiler {
         Process check = spawn(vertx, "jcmd", asList(pid, "JFR.check"));
         output(check, JavaFlightRecorder::bypass, handler);
         // TODO: Parse the recording
-
         // lgomes$ jcmd 8683 JFR.check
         // 8683:
         // Recording: recording=1 name="Recording 1" (running)
@@ -88,14 +91,28 @@ public class JavaFlightRecorder implements Profiler {
         // jcmd 8683 JFR.dump filename=./terst.jfr recording=1
         // jcmd 8683 JFR.dump
         // filename=/Users/lgomes/gitclones/flamegrapher/test.jfr recording=1
-        String filename = config.getString("flamegrapher.jfr-dump-path") + pid + "." + recording + ".jfr";
-        spawn(vertx, "jcmd", asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording)).exitHandler(
+        String filename = filename(pid, recording);
+        Process dump = spawn(vertx, "jcmd", asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording)).exitHandler(
                 status -> {
+                    
+                    System.out.println("JFR dump status " + status);
                     // TODO check status code!
                     JsonObject json = new JsonObject();
                     json.put("path", filename);
                     handler.complete(json);
                 });
+
+        Future<String> f = Future.future();
+        output(dump, JavaFlightRecorder::bypass, f);
+        handler.compose(h -> {
+            System.out.println(f.result());
+        }, null);
+        
+    }
+
+    private String filename(String pid, String recording) {
+        String filename = config.getString("flamegrapher.jfr-dump-path") + pid + "." + recording + ".jfr";
+        return filename;
     }
 
     @Override
@@ -107,8 +124,29 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     @Override
-    public void flames(Future<JsonArray> handler) {
-        // TODO Auto-generated method stub
+    public void flames(String pid, String recording, Future<StackFrame> handler) {
+        String filename = filename(pid, recording);
+        JfrParser parser = new JfrParser();
+        vertx.<StackFrame>executeBlocking(future -> {
+            try {
+                // TODO Allow different types of events
+                StackFrame json = parser.toJson(new File(filename), JdkTypeIDs.EXECUTION_SAMPLE);
+                future.complete(json);
+            } catch (IOException | CouldNotLoadRecordingException e) {
+                handler.fail(e);
+            }
+        }, result -> {
+
+            if (result.succeeded()) {
+                // FIXME: We're doing POJO->String->JsonObject and later it will
+                // be converted to String again...
+                // It should return Future<StackFrame> and StackFrame should be
+                // part of the model
+                handler.complete(result.result());
+            } else {
+                handler.fail(result.cause());
+            }
+        });
     }
 
     private <T> void output(Process process, Function<String, T> extract, Future<T> handler) {
