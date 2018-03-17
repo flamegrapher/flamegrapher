@@ -113,6 +113,7 @@ public class JsonOutputWriter {
             frame = liveRecording.getProfile(startTimestampSecEpoch);
         } else {
             frame = profile;
+            frame.value++;
         }
 
         while (!stack.empty()) {

@@ -138,10 +138,6 @@ public class JavaFlightRecorder implements Profiler {
         }, result -> {
 
             if (result.succeeded()) {
-                // FIXME: We're doing POJO->String->JsonObject and later it will
-                // be converted to String again...
-                // It should return Future<StackFrame> and StackFrame should be
-                // part of the model
                 handler.complete(result.result());
             } else {
                 handler.fail(result.cause());
