@@ -2,10 +2,8 @@ package flamegrapher.backend;
 
 import static com.oracle.jmc.flightrecorder.JfrAttributes.EVENT_STACKTRACE;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Stack;
 
 import com.oracle.jmc.common.IMCFrame;
