@@ -51,22 +51,22 @@ module.exports = {
     noInfo: true,
     proxy: {
       '/flame/api/list/': {
-        target: 'http://ncevc20709:3000/flame/api/list/',
+        target: 'http://localhost:9000/flame/api/list/',
         secure: false,
         ws: true
       },
       '/flame/api/start/': {
-        target: 'http://ncevc20709:3000/flame/api/start/',
+        target: 'http://localhost:9000/flame/api/start/',
         secure: false,
         ws: true        
       },
       '/flame/api/stop/': {
-        target: 'http://ncevc20709:3000/flame/api/stop/',
+        target: 'http://localhost:9000/flame/api/stop/',
         secure: false,
         ws: true        
       },
       '/flame/api/dump/': {
-        target: 'http://ncevc20709:3000/flame/api/dump/',
+        target: 'http://localhost:9000/flame/api/dump/',
         secure: false,
         ws: true        
       }
