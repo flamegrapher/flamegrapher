@@ -7,6 +7,14 @@
       <b-row>
         <b-col>
           <b-table striped hover fixed :items="items" :fields="fields">
+            <template slot="recording" slot-scope="row">
+              <a :href="`#flames/${row.item.recording}`" v-if="row.item.hasDump">
+                {{row.item.recording}} (view)
+              </a>
+              <div v-else>
+                {{row.item.recording}}
+              </div>
+            </template>
             <template slot="actions" slot-scope="row">
               <b-button-group size="sm">
                 <b-btn :disabled="row.item.state === 'Recording' || row.item.state === 'Dumped'" @click="start(row.item)">Start</b-btn>
@@ -15,6 +23,13 @@
               </b-button-group>
             </template>
           </b-table>
+        </b-col>
+      </b-row>
+      <b-row class="text-left">
+        <b-col>
+          <a :href="`#`">
+            View all available dumps  
+          </a>
         </b-col>
       </b-row>
     </b-container>
@@ -94,6 +109,7 @@ export default {
         .get("/flame/api/dump/" + item.pid + "/" + item.recording)
         .then(response => {
           item.state = response.data.state;
+          item.hasDump = true;
         })
         .catch(e => {
           console.log(e);
