@@ -1,19 +1,19 @@
-var path = require('path');
-var webpack = require('webpack');
+var path = require("path");
+var webpack = require("webpack");
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
 
 module.exports = {
-  entry: './src/main.js',
+  entry: "./src/main.js",
   output: {
-    path: path.resolve(__dirname, './dist'),
-    publicPath: '/dist/',
-    filename: 'build.js'
+    path: path.resolve(__dirname, "./dist"),
+    publicPath: "/dist/",
+    filename: "build.js"
   },
   module: {
     rules: [
       {
         test: /\.vue$/,
-        loader: 'vue-loader',
+        loader: "vue-loader",
         options: {
           loaders: {
           }
@@ -22,7 +22,7 @@ module.exports = {
       },
       {
         test: /\.js$/,
-        loader: 'babel-loader',
+        loader: "babel-loader",
         exclude: /node_modules/
       },
       {
@@ -34,41 +34,41 @@ module.exports = {
       },
       {
         test: /\.(png|jpg|gif|svg)$/,
-        loader: 'file-loader',
+        loader: "file-loader",
         options: {
-          name: '[name].[ext]?[hash]'
+          name: "[name].[ext]?[hash]"
         }
       }
     ]
   },
   resolve: {
     alias: {
-      'vue$': 'vue/dist/vue.esm.js'
+      "vue$": "vue/dist/vue.esm.js"
     }
   },
   devServer: {
     historyApiFallback: true,
     noInfo: true,
     proxy: {
-      '/flame/api/list/': {
-        target: 'http://localhost:9000/flame/api/list/',
+      "/flame/api/list/": {
+        target: "http://ncevc20709:3000/flame/api/list/",
         secure: false,
         ws: true
       },
-      '/flame/api/start/': {
-        target: 'http://localhost:9000/flame/api/start/',
+      "/flame/api/start/": {
+        target: "http://ncevc20709:3000/flame/api/start/",
         secure: false,
-        ws: true        
+        ws: true
       },
-      '/flame/api/stop/': {
-        target: 'http://localhost:9000/flame/api/stop/',
+      "/flame/api/stop/": {
+        target: "http://ncevc20709:3000/flame/api/stop/",
         secure: false,
-        ws: true        
+        ws: true
       },
-      '/flame/api/dump/': {
-        target: 'http://localhost:9000/flame/api/dump/',
+      "/flame/api/dump/": {
+        target: "http://ncevc20709:3000/flame/api/dump/",
         secure: false,
-        ws: true        
+        ws: true
       }
     }
   },
@@ -76,15 +76,15 @@ module.exports = {
     hints: false
   },
   plugins: [new ExtractTextPlugin("main.css")],
-  devtool: '#eval-source-map'
+  devtool: "#eval-source-map"
 };
 
-if (process.env.NODE_ENV === 'production') {
-  module.exports.devtool = '#source-map';
+if (process.env.NODE_ENV === "production") {
+  module.exports.devtool = "#source-map";
   // http://vue-loader.vuejs.org/en/workflow/production.html
   module.exports.plugins = (module.exports.plugins || []).concat([
     new webpack.DefinePlugin({
-      'process.env': {
+      "process.env": {
         NODE_ENV: '"production"'
       }
     }),

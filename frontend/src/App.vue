@@ -12,13 +12,13 @@
 import axios from "axios";
 export default {
   name: "app",
-  data() {
+  data () {
     return {
       items: []
     };
   },
-  created() {
-    this.$nextTick(function() {
+  created () {
+    this.$nextTick(function () {
       axios
         .get("/flame/api/list/")
         .then(response => {
@@ -29,7 +29,7 @@ export default {
         });
     });
   }
-}
+};
 </script>
 
 

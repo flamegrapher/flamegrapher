@@ -34,7 +34,7 @@
 import axios from "axios";
 export default {
   name: "home",
-  data() {
+  data () {
     return {
       fields: [
         {
@@ -60,9 +60,9 @@ export default {
       ]
     };
   },
-  props: ['items'],
+  props: ["items"],
   methods: {
-    start: function(item) {
+    start: function (item) {
       axios
         .get("/flame/api/start/" + item.pid)
         .then(response => {
@@ -73,7 +73,7 @@ export default {
           console.log(e);
         });
     },
-    stop: function(item) {
+    stop: function (item) {
       axios
         .get("/flame/api/stop/" + item.pid)
         .then(response => {
@@ -83,7 +83,7 @@ export default {
           console.log(e);
         });
     },
-    dump: function(item) {
+    dump: function (item) {
       axios
         .get("/flame/api/dump/" + item.pid + "/" + item.recording)
         .then(response => {
