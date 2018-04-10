@@ -57,6 +57,8 @@ li {
   margin: 0 10px;
 }
 
+.btn-link,
+.btn-outline-secondary,
 a,
 h2 {
   color: #b95e42;
