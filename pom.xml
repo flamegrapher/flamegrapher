@@ -12,6 +12,7 @@
 		<vertx.version>3.5.0</vertx.version>
 		<jmc.version>6.0.0.173472</jmc.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<frontend.directory>frontend</frontend.directory>
 	</properties>
 
 	<build>
@@ -66,12 +67,53 @@
 					<mainClass>io.vertx.core.Launcher</mainClass>
 					<arguments>
 						<argument>run</argument>
-						<argument>com.github.flamegrapher.MainVerticle</argument>
+						<argument>flamegrapher.MainVerticle</argument>
 					</arguments>
 				</configuration>
 			</plugin>
 
+			<plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.6</version>
+                <configuration>
+                    <workingDirectory>${frontend.directory}</workingDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install node and yarn</id>
+                        <goals>
+                            <goal>install-node-and-yarn</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>v9.10.1</nodeVersion>
+                            <yarnVersion>v1.5.1</yarnVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>yarn install</id>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>yarn run build</id>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
 		</plugins>
+		<resources>
+            <resource>
+                <directory>${frontend.directory}/dist</directory>
+            </resource>
+        </resources>
 	</build>
 
 	<dependencies>

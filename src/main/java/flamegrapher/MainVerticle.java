@@ -5,10 +5,10 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.StaticHandler;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -19,11 +19,12 @@ public class MainVerticle extends AbstractVerticle {
 
         // Bind "/" to our hello message
         router.route("/")
-              .handler(routingContext -> {
-                  HttpServerResponse response = routingContext.response();
-                  response.putHeader("content-type", "text/html")
-                          .end("<h1>Hello</h1>");
-              });
+              .handler(StaticHandler.create("flamegrapher"));
+            //   .handler(routingContext -> {
+            //       HttpServerResponse response = routingContext.response();
+            //       response.putHeader("content-type", "text/html")
+            //               .end("<h1>Hello</h1>");
+            //   });
 
         router.get("/api/list")
               .handler(rc -> {
