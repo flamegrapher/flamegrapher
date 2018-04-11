@@ -7,7 +7,7 @@
       <b-row align-h="center" align-v="center">
         <flower-spinner :animation-duration="2500" :size="100" color="#b95e42" v-show="loading"/>
       </b-row>
-      <router-view :initialItems="items" v-show="!loading"></router-view>
+      <router-view :items="items" v-show="!loading"></router-view>
     </b-container>
   </div>
 </template>

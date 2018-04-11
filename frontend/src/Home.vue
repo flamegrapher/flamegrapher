@@ -2,7 +2,7 @@
 <div>
     <b-row>
         <b-col>
-            <b-table striped hover fixed :items="values" :fields="fields">
+            <b-table striped hover fixed :items="items" :fields="fields">
             <template slot="state" slot-scope="row">
               <b-progress :value="100" variant="secondary" :animated="true" class="mb-3" v-show="row.item.loading"></b-progress>
               <div v-show="!row.item.loading">{{row.item.state}}</div>
@@ -28,7 +28,7 @@
     <b-row class="text-left">
         <b-col>
           <a :href="`#/dumps`">
-            View all available dumps  
+            View all available dumps
           </a>
         </b-col>
     </b-row>
@@ -61,14 +61,15 @@ export default {
           label: "Recording #"
         },
         "actions"
-      ],
-      values: this.initialItems
+      ]
     };
   },
-  props: ["initialItems"],
+  props: ["items"],
   methods: {
     start: function (item) {
-      item.loading = true;
+      // Needs to call this.$set because loading is being dinamically added
+      // and not reactive by default.
+      this.$set(item, "loading", true);
       axios
         .get("/flame/api/start/" + item.pid)
         .then(response => {
@@ -81,7 +82,7 @@ export default {
         });
     },
     stop: function (item) {
-      item.loading = true;
+      this.$set(item, "loading", true);
       axios
         .get("/flame/api/stop/" + item.pid)
         .then(response => {
@@ -93,12 +94,12 @@ export default {
         });
     },
     dump: function (item) {
-      item.loading = true;
+      this.$set(item, "loading", true);
       axios
         .get("/flame/api/dump/" + item.pid + "/" + item.recording)
         .then(response => {
           item.state = response.data.state;
-          item.hasDump = true;
+          this.$set(item, "hasDump", true);
           item.loading = false;
         })
         .catch(e => {
