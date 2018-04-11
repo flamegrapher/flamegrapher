@@ -1,5 +1,5 @@
 [
   { "pid": 2332, "name": "Eclipse", "state": "Not recording", "recording": "N/A" },
-  { "pid": 12345, "name": "OJF blablabla java process", "state": "Recording", "recording": "1" },
-  { "pid": 99845, "name": "Edge blablabla java process", "state": "Dumped", "recording": "1" }
+  { "pid": 12345, "name": "MyAwesome blablabla java process", "state": "Recording", "recording": "1" },
+  { "pid": 99845, "name": "Hello blablabla java process", "state": "Dumped", "recording": "1" }
 ]
