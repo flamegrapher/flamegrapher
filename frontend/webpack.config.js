@@ -66,7 +66,7 @@ module.exports = {
         ws: true
       },
       "/flame/api/dump/": {
-        target: "http://ncevc20709.nce.amadeus.net:3000/flame/api/dump/",
+        target: "http://loclahost:3000/flame/api/dump/",
         secure: false,
         ws: true
       }
