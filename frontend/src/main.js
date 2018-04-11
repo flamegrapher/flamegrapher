@@ -5,6 +5,7 @@ import App from "./App.vue";
 import Home from "./Home.vue";
 import Dumps from "./Dumps.vue";
 import Flames from "./Flames.vue";
+import { FlowerSpinner } from "epic-spinners";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-vue/dist/bootstrap-vue.css";
 
@@ -24,6 +25,8 @@ const router = new VueRouter({
 Vue.component("back", {
   template: '<b-row class="text-left"><b-col><a :href="`#/`">Back to home</a></b-col></b-row>'
 });
+
+Vue.component("flower-spinner", FlowerSpinner);
 
 new Vue({
   el: "#app",

@@ -4,17 +4,22 @@
       <b-row class="text-left">
           <b-col><h2>Flamegrapher 🔥</h2></b-col>
       </b-row>
-      <router-view :items="items"></router-view>
+      <b-row align-h="center" align-v="center">
+        <flower-spinner :animation-duration="2500" :size="100" color="#b95e42" v-show="loading"/>
+      </b-row>
+      <router-view :initialItems="items" v-show="!loading"></router-view>
     </b-container>
   </div>
 </template>
 <script>
 import axios from "axios";
+
 export default {
   name: "app",
   data () {
     return {
-      items: []
+      items: [],
+      loading: true
     };
   },
   created () {
@@ -23,6 +28,7 @@ export default {
         .get("/flame/api/list/")
         .then(response => {
           this.items = response.data;
+          this.loading = false;
         })
         .catch(e => {
           console.log(e);

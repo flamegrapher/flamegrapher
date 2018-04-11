@@ -1,6 +1,9 @@
 <template>
     <div>
-        <b-row align-h="start">
+        <b-row align-h="center" align-v="center">
+            <flower-spinner :animation-duration="2500" :size="100" color="#b95e42" v-show="loading"/>
+        </b-row>
+        <b-row align-h="start" v-show="!loading">
             <b-col cols="8">
                 <b-form size="sm" inline @submit="search()" @reset="clear()">
                     <b-input-group>
@@ -18,7 +21,7 @@
                 </b-form>
             </b-col>
         </b-row>
-        <b-row>
+        <b-row v-show="!loading">
             <b-col>
                 <div id="chart"></div>
                 <div id="details"></div>
@@ -39,7 +42,8 @@ export default {
   data () {
     return {
       chartState: [],
-      searchExpression: ""
+      searchExpression: "",
+      loading: true
     };
   },
   methods: {
@@ -72,6 +76,7 @@ export default {
               select(`#chart`)
                     .datum(response.data)
                     .call(chart);
+              this.loading = false;
             }).catch(e => {
                 // FIXME Proper error handling
               console.log(e);

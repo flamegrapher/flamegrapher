@@ -2,7 +2,11 @@
 <div>
     <b-row>
         <b-col>
-            <b-table striped hover fixed :items="items" :fields="fields">
+            <b-table striped hover fixed :items="values" :fields="fields">
+            <template slot="state" slot-scope="row">
+              <b-progress :value="100" variant="secondary" :animated="true" class="mb-3" v-show="row.item.loading"></b-progress>
+              <div v-show="!row.item.loading">{{row.item.state}}</div>
+            </template>
             <template slot="recording" slot-scope="row">
                 <a :href="`#/flames/${row.item.pid}/${row.item.recording}`" v-if="row.item.hasDump">
                 {{row.item.recording}} (view)
@@ -13,8 +17,7 @@
             </template>
             <template slot="actions" slot-scope="row">
                 <b-button-group size="sm">
-                  <b-btn :disabled="row.item.state === 'Recording' || row.item.state === 'Dumped'" 
-                         @click="start(row.item)">Start</b-btn>
+                  <b-btn :disabled="row.item.state === 'Recording' || row.item.state === 'Dumped'" @click="start(row.item)">Start</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="stop(row.item)">Stop</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="dump(row.item)">Dump</b-btn>
                 </b-button-group>
@@ -58,38 +61,45 @@ export default {
           label: "Recording #"
         },
         "actions"
-      ]
+      ],
+      values: this.initialItems
     };
   },
-  props: ["items"],
+  props: ["initialItems"],
   methods: {
     start: function (item) {
+      item.loading = true;
       axios
         .get("/flame/api/start/" + item.pid)
         .then(response => {
           item.state = response.data.state;
           item.recording = response.data.recording;
+          item.loading = false;
         })
         .catch(e => {
           console.log(e);
         });
     },
     stop: function (item) {
+      item.loading = true;
       axios
         .get("/flame/api/stop/" + item.pid)
         .then(response => {
           item.state = response.data.state;
+          item.loading = false;
         })
         .catch(e => {
           console.log(e);
         });
     },
     dump: function (item) {
+      item.loading = true;
       axios
         .get("/flame/api/dump/" + item.pid + "/" + item.recording)
         .then(response => {
           item.state = response.data.state;
           item.hasDump = true;
+          item.loading = false;
         })
         .catch(e => {
           console.log(e);
@@ -98,4 +108,3 @@ export default {
   }
 };
 </script>
-
