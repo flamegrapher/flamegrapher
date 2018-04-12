@@ -6,6 +6,9 @@ repo/
 ### Vert.x ###
 .vertx/
 
+frontend/node/
+node/
+
 ### Eclipse ###
 .classpath
 .project

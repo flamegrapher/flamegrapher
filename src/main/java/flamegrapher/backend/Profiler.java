@@ -1,8 +1,8 @@
 package flamegrapher.backend;
 
+import flamegrapher.backend.JsonOutputWriter.StackFrame;
 import flamegrapher.model.Processes;
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public interface Profiler {
@@ -17,5 +17,5 @@ public interface Profiler {
     
     void stop(String pid, String recording, Future<Void> handler);
     
-    void flames(Future<JsonArray> handler);
+    void flames(String pid, String recording, Future<StackFrame> handler);
 }

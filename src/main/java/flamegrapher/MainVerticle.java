@@ -10,6 +10,8 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.StaticHandler;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -19,14 +21,19 @@ public class MainVerticle extends AbstractVerticle {
     public void start(Future<Void> fut) {
         JavaFlightRecorder jfr = new JavaFlightRecorder(vertx);
         Router router = Router.router(vertx);
+        router.route()
+              .handler(BodyHandler.create());
 
-        // Bind "/" to our hello message
         router.route("/")
               .handler(routingContext -> {
                   HttpServerResponse response = routingContext.response();
                   response.putHeader("content-type", "text/html")
                           .end("<h1>Hello</h1>");
               });
+
+        // Bind "/" to our hello message
+        router.route("/flames/*")
+              .handler(StaticHandler.create("flames").setCachingEnabled(false));
 
         router.get("/api/list")
               .handler(rc -> {
@@ -65,6 +72,15 @@ public class MainVerticle extends AbstractVerticle {
                   String recording = rc.request()
                                        .getParam("recording");
                   jfr.stop(pid, recording, newFuture(rc));
+              });
+
+        router.get("/api/flames/:pid/:recording")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  String recording = rc.request()
+                                       .getParam("recording");
+                  jfr.flames(pid, recording, newFuture(rc));
               });
 
         Integer port = config().getInteger("http.port", 8080);
