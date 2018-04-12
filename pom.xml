@@ -107,13 +107,29 @@
                     </execution>
                 </executions>
             </plugin>
-
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.0.2</version>
+				<executions>
+				<execution>
+					<id>copy-resources</id>
+					<!-- here the phase you need -->
+					<phase>validate</phase>
+					<goals>
+					<goal>copy-resources</goal>
+					</goals>
+					<configuration>
+					<outputDirectory>${basedir}/target/classes/flames</outputDirectory>
+					<resources>          
+						<resource>
+							<directory>${frontend.directory}/dist</directory>
+						</resource>
+					</resources>              
+					</configuration>            
+				</execution>
+				</executions>
+			</plugin>
 		</plugins>
-		<resources>
-            <resource>
-                <directory>${frontend.directory}/dist</directory>
-            </resource>
-        </resources>
 	</build>
 
 	<dependencies>
