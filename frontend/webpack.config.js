@@ -49,24 +49,30 @@ module.exports = {
   devServer: {
     historyApiFallback: true,
     noInfo: true,
+    port: 3000,
     proxy: {
-      "/flame/api/list/": {
-        target: "http://localhost:3000/flame/api/list/",
+      "/api/list/": {
+        target: "http://localhost:8080/api/list/",
         secure: false,
         ws: true
       },
-      "/flame/api/start/": {
-        target: "http://localhost:3000/flame/api/start/",
+      "/api/start/": {
+        target: "http://localhost:8080/api/start/",
         secure: false,
         ws: true
       },
-      "/flame/api/stop/": {
-        target: "http://localhost:3000/flame/api/stop/",
+      "/api/stop/": {
+        target: "http://localhost:8080/api/stop/",
         secure: false,
         ws: true
       },
-      "/flame/api/dump/": {
-        target: "http://loclahost:3000/flame/api/dump/",
+      "/api/dump/": {
+        target: "http://loclahost:8080/api/dump/",
+        secure: false,
+        ws: true
+      },
+      "/api/flames/": {
+        target: "http://loclahost:8080/api/flames/",
         secure: false,
         ws: true
       }

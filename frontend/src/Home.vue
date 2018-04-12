@@ -71,7 +71,7 @@ export default {
       // and not reactive by default.
       this.$set(item, "loading", true);
       axios
-        .get("/flame/api/start/" + item.pid)
+        .get("/api/start/" + item.pid)
         .then(response => {
           item.state = response.data.state;
           item.recording = response.data.recording;
@@ -84,7 +84,7 @@ export default {
     stop: function (item) {
       this.$set(item, "loading", true);
       axios
-        .get("/flame/api/stop/" + item.pid)
+        .get("/api/stop/" + item.pid + "/" + item.recording)
         .then(response => {
           item.state = response.data.state;
           item.loading = false;
@@ -96,7 +96,7 @@ export default {
     dump: function (item) {
       this.$set(item, "loading", true);
       axios
-        .get("/flame/api/dump/" + item.pid + "/" + item.recording)
+        .get("/api/dump/" + item.pid + "/" + item.recording)
         .then(response => {
           item.state = response.data.state;
           this.$set(item, "hasDump", true);

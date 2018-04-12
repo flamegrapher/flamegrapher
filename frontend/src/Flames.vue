@@ -69,8 +69,7 @@ export default {
     var details = document.getElementById("details");
     chart.details(details);
     this.chartState = chart;
-        // const url = "/flame/api/flames/" + this.$route.params.pid + "/" + this.$route.params.recordingId;
-    const url = "/stacks.json";
+    const url = "/api/flames/" + this.$route.params.pid + "/" + this.$route.params.recordingId;
     axios.get(url)
             .then(response => {
               select(`#chart`)

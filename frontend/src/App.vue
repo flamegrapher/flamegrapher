@@ -25,7 +25,7 @@ export default {
   created () {
     this.$nextTick(function () {
       axios
-        .get("/flame/api/list/")
+        .get("/api/list/")
         .then(response => {
           this.items = response.data;
           this.loading = false;
