@@ -5,6 +5,8 @@ import static java.util.Arrays.asList;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 
 import com.julienviet.childprocess.Process;
@@ -52,30 +54,27 @@ public class JavaFlightRecorder implements Profiler {
 
     @Override
     public void list(Future<Processes> handler) {
-        Process process = Process.spawn(vertx, "jcmd");
-        output(process, Processes::fromString, handler);
+        jcmd(Collections.emptyList(), handler, Processes::fromString);
     }
 
     @Override
     public void start(String pid, Future<Void> handler) {
         // First run jcmd 8683 VM.unlock_commercial_features
         // Then run jcmd 8683 JFR.start
-        Process unlock = Process.spawn(vertx, "jcmd", asList(pid, "VM.unlock_commercial_features"));
-        unlock.exitHandler(status -> {
-            // TODO check status value
-            // Assuming it's OK now
-            Process.spawn(vertx, "jcmd", asList(pid, "JFR.start"))
-                   .exitHandler(startStatus -> {
-                       System.out.println("Exit status of JFR start: " + startStatus.intValue());
-                       handler.complete();
-                   });
+        Future<Void> firstHandler = Future.future();
+        firstHandler.setHandler(s -> {
+            if (s.succeeded()) {
+                jcmd(asList(pid, "JFR.start"), handler);                
+            } else {
+                handler.fail(s.cause());
+            }
         });
+        jcmd(asList(pid, "VM.unlock_commercial_features"), firstHandler);
     }
-
+    
     @Override
     public void status(String pid, Future<String> handler) {
-        Process check = spawn(vertx, "jcmd", asList(pid, "JFR.check"));
-        output(check, JavaFlightRecorder::bypass, handler);
+        jcmd(asList(pid, "JFR.check"), handler, JavaFlightRecorder::bypass);
         // TODO: Parse the recording
         // lgomes$ jcmd 8683 JFR.check
         // 8683:
@@ -92,22 +91,13 @@ public class JavaFlightRecorder implements Profiler {
         // jcmd 8683 JFR.dump
         // filename=/Users/lgomes/gitclones/flamegrapher/test.jfr recording=1
         String filename = filename(pid, recording);
-        Process dump = spawn(vertx, "jcmd", asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording)).exitHandler(
-                status -> {
-                    
-                    System.out.println("JFR dump status " + status);
-                    // TODO check status code!
-                    JsonObject json = new JsonObject();
-                    json.put("path", filename);
-                    handler.complete(json);
-                });
-
-        Future<String> f = Future.future();
-        output(dump, JavaFlightRecorder::bypass, f);
-        handler.compose(h -> {
-            System.out.println(f.result());
-        }, null);
-        
+        jcmd(asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording),
+        handler, 
+        s -> {
+            JsonObject json = new JsonObject();
+            json.put("path", filename);
+            return json;
+        });
     }
 
     private String filename(String pid, String recording) {
@@ -117,10 +107,7 @@ public class JavaFlightRecorder implements Profiler {
 
     @Override
     public void stop(String pid, String recording, Future<Void> handler) {
-        spawn(vertx, "jcmd", asList(pid, "JFR.stop", "recording=" + recording)).exitHandler(status -> {
-            // TODO Handle errors
-            handler.complete();
-        });
+        jcmd(asList(pid, "JFR.stop", "recording=" + recording), handler);
     }
 
     @Override
@@ -145,15 +132,36 @@ public class JavaFlightRecorder implements Profiler {
         });
     }
 
-    private <T> void output(Process process, Function<String, T> extract, Future<T> handler) {
-        StringBuilder str = new StringBuilder();
-        process.stdout()
-               .handler(buf -> {
-                   str.append(buf);
-               })
-               .endHandler(end -> {
-                   T object = extract.apply(str.toString());
-                   handler.complete(object);
-               });
+    private <T> void jcmd(List<String> args, Future<T> handler) {
+        jcmd(args, handler, null);
     }
+    
+    private <T> void jcmd(List<String> args, Future<T> handler, Function<String, T> transformer) {
+        Process process = spawn(vertx, "jcmd", args);
+        Future<String> processCompleteHandler = completeOnExit(handler, transformer);
+        StringBuilder str = new StringBuilder();
+        StringBuilder err = new StringBuilder();
+        process.stdout().handler(str::append);
+        process.stderr().handler(err::append);
+        process.exitHandler(status -> { 
+            if (status.intValue() != 0) {
+                processCompleteHandler.fail(new ProfilerError("jcmd status code was " + status + ", stderr=" + err));
+            } else {
+                processCompleteHandler.complete(str.toString());
+            }
+        });
+    }
+
+    private <T> Future<String> completeOnExit(Future<T> future, Function<String, T> transformer) {
+        Future<String> f = Future.future();
+        f.compose(s -> {
+            if (transformer != null) {
+                future.complete(transformer.apply(s));
+            } else {
+                future.complete();
+            }
+        }, future);
+        return f;
+    }
+
 }

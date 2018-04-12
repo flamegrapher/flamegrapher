@@ -5,6 +5,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
@@ -13,6 +14,8 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 public class MainVerticle extends AbstractVerticle {
+
+    private static final String APPLICATION_JSON_CHARSET_UTF_8 = "application/json; charset=utf-8";
 
     @Override
     public void start(Future<Void> fut) {
@@ -30,20 +33,21 @@ public class MainVerticle extends AbstractVerticle {
 
         // Bind "/" to our hello message
         router.route("/flames/*")
-              .handler(StaticHandler.create("flames"));
-              .setCachingEnabled(false));
+              .handler(StaticHandler.create("flames").setCachingEnabled(false));
 
         router.get("/api/list")
               .handler(rc -> {
                   jfr.list(newFuture(rc));
-              });
+              })
+              .failureHandler(this::failureHandler);
 
         router.get("/api/start/:pid")
               .handler(rc -> {
                   String pid = rc.request()
                                  .getParam("pid");
                   jfr.start(pid, newFuture(rc));
-              });
+              })
+              .failureHandler(this::failureHandler);
 
         router.get("/api/status/:pid")
               .handler(rc -> {
@@ -79,15 +83,17 @@ public class MainVerticle extends AbstractVerticle {
                   jfr.flames(pid, recording, newFuture(rc));
               });
 
+        Integer port = config().getInteger("http.port", 8080);
         vertx.createHttpServer()
              .requestHandler(router::accept)
-             .listen(config().getInteger("http.port", 8080), result -> {
+             .listen(port, result -> {
                  if (result.succeeded()) {
                      fut.complete();
                  } else {
                      fut.fail(result.cause());
                  }
              });
+        System.out.println("Listening on port: " + port);
     }
 
     private <T> Future<T> newFuture(RoutingContext rc) {
@@ -95,18 +101,34 @@ public class MainVerticle extends AbstractVerticle {
         future.setHandler(result -> {
             if (result.succeeded()) {
                 rc.response()
-                  .putHeader("content-type", "application/json; charset=utf-8")
+                  .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
                   .end(Json.encodePrettily(result.result()));
             } else {
-                managerError(result);
+                managerError(rc, result);
             }
         });
         return future;
     }
+    
+    private void failureHandler(RoutingContext rc) {
+        rc.response().setStatusCode(500)
+          .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
+          .end(Json.encodePrettily(new ErrorResult("" + rc.failure())));
+        
+    }
 
-    private static void managerError(AsyncResult<?> result) {
-        // TODO: Manage errors properly
-        System.err.println(result.cause());
+    private static void managerError(RoutingContext rc, AsyncResult<?> result) {
+        Throwable cause = result.cause();
+        if (cause != null) {
+            rc.response()
+              .setStatusCode(500)
+              .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
+              .end(Json.encodePrettily(new ErrorResult(result.cause().getMessage())));
+        } else {
+            rc.response().setStatusCode(500)
+            .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
+              .end(Json.encodePrettily(new ErrorResult("Unknown error cause")));
+        }
     }
 
     public static void main(String[] args) {
