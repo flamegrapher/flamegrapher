@@ -31,7 +31,6 @@
 </template>
 <script>
 
-import axios from "axios";
 import { flamegraph } from "d3-flame-graph";
 import { select } from "d3-selection";
 import "d3-flame-graph/dist/d3-flamegraph.css";
@@ -67,15 +66,19 @@ export default {
 
     this.chartState = chart;
     const url = "/api/flames/" + this.$route.params.pid + "/" + this.$route.params.recordingId;
-    axios.get(url)
+    this.$http.get(url)
             .then(response => {
               select(`#chart`)
                     .datum(response.data)
                     .call(chart);
               this.loading = false;
-            }).catch(e => {
-                // FIXME Proper error handling
-              console.log(e);
+            }).catch(error => {
+              this.$notify({
+                title: error.message,
+                text: error.response.data,
+                type: "error",
+                duration: 5000
+              });
             });
   }
 };

@@ -34,6 +34,8 @@ public class JavaFlightRecorder implements Profiler {
     // * Handle errors in the UI (HTTP 500)
     // * Validate with Java 9
     // * Other event types
+    // * Add hook to update the listed processes every 30s automatically (or add button to do it manually?)
+    // * Fallback to standard vertx config
     // * Run VM.version on each process to filter out OpenJDK and old JVMs while running list 
     // $ jcmd 49371 VM.version
     // 49371:
