@@ -17,7 +17,7 @@
             </template>
             <template slot="actions" slot-scope="row">
                 <b-button-group size="sm">
-                  <b-btn :disabled="row.item.state === 'Recording' || row.item.state === 'Dumped'" @click="start(row.item)">Start</b-btn>
+                  <b-btn :disabled="row.item.state === 'Recording'" @click="start(row.item)">Start</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="stop(row.item)">Stop</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="dump(row.item)">Dump</b-btn>
                 </b-button-group>
@@ -98,7 +98,6 @@ export default {
       axios
         .get("/api/dump/" + item.pid + "/" + item.recording)
         .then(response => {
-          item.state = response.data.state;
           this.$set(item, "hasDump", true);
           item.loading = false;
         })

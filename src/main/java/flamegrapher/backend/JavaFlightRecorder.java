@@ -18,7 +18,9 @@ import com.typesafe.config.ConfigFactory;
 
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
 import flamegrapher.model.Item;
+import flamegrapher.model.JVM;
 import flamegrapher.model.Processes;
+import flamegrapher.model.State;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -28,25 +30,15 @@ import io.vertx.core.json.JsonObject;
 public class JavaFlightRecorder implements Profiler {
 
     // TODO
-    // Define a template for processing the output and converting to string
-    // The other commands basically call stuff without much output
-    // Need to handle exceptions
-    // Need to check errors from the output of the program to send back a
-    // msg
-    // Need to read the JFR file in a non-blocking way
-    // Integrate code of JFR to flame graph
-    // Check if we could base the parsing logic on the the JFR coming with
-    // Java 9. Can we generate an executable?
-    // Check http://hirt.se/blog/?p=920
-    // Check
-    // https://steveperkins.com/using-java-9-modularization-to-ship-zero-dependency-native-apps/
-
-    // Try to make something that will push back the response to the UI when
-    // it's ready
-    // e.g. profile for 60s this PID (fire and forget)
-    // Result is pushed back when ready
-
-    // Add config
+    // * Add logging
+    // * Handle errors in the UI (HTTP 500)
+    // * Validate with Java 9
+    // * Other event types
+    // * Run VM.version on each process to filter out OpenJDK and old JVMs while running list 
+    // $ jcmd 49371 VM.version
+    // 49371:
+    // OpenJDK 64-Bit Server VM version 25.152-b12
+    // JDK 8.0_152
 
     private final Config config;
     private final Vertx vertx;
@@ -101,18 +93,19 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     @Override
-    public void start(String pid, Future<Void> handler) {
+    public void start(String pid, Future<Item> handler) {
         // First run jcmd 8683 VM.unlock_commercial_features
         // Then run jcmd 8683 JFR.start
         Future<Void> firstHandler = Future.future();
+        jcmd(asList(pid, "VM.unlock_commercial_features"), firstHandler);
         firstHandler.setHandler(s -> {
             if (s.succeeded()) {
-                jcmd(asList(pid, "JFR.start"), handler);
+                jcmd(asList(pid, "JFR.start"), handler, Item::fromStart);
             } else {
                 handler.fail(s.cause());
             }
         });
-        jcmd(asList(pid, "VM.unlock_commercial_features"), firstHandler);
+
     }
 
     @Override
@@ -120,21 +113,37 @@ public class JavaFlightRecorder implements Profiler {
         jcmd(asList(pid, "JFR.check"), handler, Item::fromStatus);
     }
 
-    private static String bypass(String s) {
-        return s;
-    }
-
     @Override
     public void dump(String pid, String recording, Future<JsonObject> handler) {
-        // jcmd 8683 JFR.dump filename=./terst.jfr recording=1
-        // jcmd 8683 JFR.dump
-        // filename=/Users/lgomes/gitclones/flamegrapher/test.jfr recording=1
+
         String filename = filename(pid, recording);
-        jcmd(asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording), handler, s -> {
-            JsonObject json = new JsonObject();
-            json.put("path", filename);
-            return json;
-        });
+        // First we need to check the JVM version
+        Future<JVM> jvmFuture = Future.future();
+        jcmd(asList(pid, "VM.version"), jvmFuture, JVM::fromVMVersion);
+
+        // Once we got the JVM version, we can execute the dump
+        jvmFuture.compose(jvm -> {
+            List<String> args = new ArrayList<>();
+            args = argumentsForDump(pid, recording, filename, jvm);
+            // Execute the dump
+            jcmd(args, handler, s -> {
+                JsonObject json = new JsonObject();
+                json.put("path", filename);
+                return json;
+            });
+            
+        }, handler);
+    }
+
+    private List<String> argumentsForDump(String pid, String recording, String filename, JVM jvm) {
+        List<String> args;
+        // Command changed starting with JDK 9
+        if (jvm.getMajorVersion() == 9) {
+            args = asList(pid, "JFR.dump", "filename=" + filename, "name=" + recording);
+        } else {
+            args = asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording);
+        }
+        return args;
     }
 
     private String filename(String pid, String recording) {
@@ -143,8 +152,27 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     @Override
-    public void stop(String pid, String recording, Future<Void> handler) {
-        jcmd(asList(pid, "JFR.stop", "recording=" + recording), handler);
+    public void stop(String pid, String recording, Future<Item> handler) {
+        
+        // First we need to check the JVM version
+        Future<JVM> jvmFuture = Future.future();
+        jcmd(asList(pid, "VM.version"), jvmFuture, JVM::fromVMVersion);
+
+        // Once we got the JVM version, we can execute the stop
+        jvmFuture.compose(jvm -> {
+            String recordingParameter = (jvm.getMajorVersion() == 9 ? "name=" : "recording=");
+            
+            // Don't parse the output. If there's an error the jcmd method will fail
+            // the future.
+            // If we tried to stop a recording that was not running, we will simply
+            // ignore it for now.
+            jcmd(asList(pid, "JFR.stop", recordingParameter + recording), handler, s -> {
+                Item i = new Item(pid);
+                i.setState(State.NOT_RECORDING);
+                i.setRecordingNumber(recording);
+                return i;
+            });
+        }, handler);
     }
 
     @Override
@@ -169,7 +197,7 @@ public class JavaFlightRecorder implements Profiler {
         });
     }
 
-    private <T> void jcmd(List<String> args, Future<T> handler) {
+    private <T> void jcmd(List<String> args, Future<Void> handler) {
         jcmd(args, handler, null);
     }
 
@@ -202,5 +230,4 @@ public class JavaFlightRecorder implements Profiler {
         }, future);
         return f;
     }
-
 }

@@ -5,7 +5,6 @@ import java.util.Map;
 
 public class Processes {
     
-    //@JsonProperty("processes")
     Map<String, Item> items;
     
     public Processes() {

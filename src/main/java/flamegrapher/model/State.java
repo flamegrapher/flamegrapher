@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 @JsonSerialize(using=ToStringSerializer.class)
 public enum State {
-    RECORDING, NOT_RECORDING;
     
+    RECORDING, NOT_RECORDING;
     
     @Override
     public String toString() {

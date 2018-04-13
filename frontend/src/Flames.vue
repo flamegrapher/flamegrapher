@@ -24,7 +24,6 @@
         <b-row v-show="!loading">
             <b-col>
                 <div id="chart"></div>
-                <div id="details"></div>
             </b-col>
         </b-row>
         <back></back>        
@@ -66,8 +65,6 @@ export default {
             .sort(true)
             .title("");
 
-    var details = document.getElementById("details");
-    chart.details(details);
     this.chartState = chart;
     const url = "/api/flames/" + this.$route.params.pid + "/" + this.$route.params.recordingId;
     axios.get(url)

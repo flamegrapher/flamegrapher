@@ -10,13 +10,13 @@ public interface Profiler {
     
     void list(Future<JsonArray> handler);
 
-    void start(String pid, Future<Void> handler);
+    void start(String pid, Future<Item> handler);
     
     void status(String pid, Future<Item> handler);
     
     void dump(String pid, String recorder, Future<JsonObject> handler);
     
-    void stop(String pid, String recording, Future<Void> handler);
+    void stop(String pid, String recording, Future<Item> handler);
     
     void flames(String pid, String recording, Future<StackFrame> handler);
 }
