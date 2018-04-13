@@ -51,31 +51,7 @@ module.exports = {
     noInfo: true,
     port: 3000,
     proxy: {
-      "/api/list/": {
-        target: "http://localhost:8080/api/list",
-        secure: false,
-        ws: false
-      },
-      "/api/start/": {
-        target: "http://localhost:8080/api/start/",
-        secure: false,
-        ws: true
-      },
-      "/api/stop/": {
-        target: "http://localhost:8080/api/stop/",
-        secure: false,
-        ws: true
-      },
-      "/api/dump/": {
-        target: "http://localhost:8080/api/dump/",
-        secure: false,
-        ws: true
-      },
-      "/api/flames/": {
-        target: "http://localhost:8080/api/flames/",
-        secure: false,
-        ws: true
-      }
+      "/api": "http://localhost:8080"
     }
   },
   performance: {
