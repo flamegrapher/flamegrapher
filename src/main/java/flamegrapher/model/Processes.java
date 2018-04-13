@@ -3,19 +3,17 @@ package flamegrapher.model;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class Processes {
     
-    @JsonProperty("processes")
-    Map<String, String> pidName;
+    //@JsonProperty("processes")
+    Map<String, Item> items;
     
     public Processes() {
-        pidName = new HashMap<String,String>();
+        items = new HashMap<String,Item>();
     }
     
-    public Map<String, String> getPidName() {
-        return pidName;
+    public Map<String, Item> items() {
+        return items;
     }
 
     public static Processes fromString(String string) {
@@ -23,10 +21,11 @@ public class Processes {
         String[] lines = string.split("\n");
         for(String line : lines) {
             String[] parts = line.split(" ", 2);
-            p.pidName.put(parts[0], parts[1]);
+            String pid = parts[0];
+            String name = parts[1];
+            Item item = new Item(pid, name);
+            p.items.put(pid, item);
         }
         return p;
     }
 }
-
-

@@ -52,9 +52,9 @@ module.exports = {
     port: 3000,
     proxy: {
       "/api/list/": {
-        target: "http://localhost:8080/api/list/",
+        target: "http://localhost:8080/api/list",
         secure: false,
-        ws: true
+        ws: false
       },
       "/api/start/": {
         target: "http://localhost:8080/api/start/",
@@ -67,12 +67,12 @@ module.exports = {
         ws: true
       },
       "/api/dump/": {
-        target: "http://loclahost:8080/api/dump/",
+        target: "http://localhost:8080/api/dump/",
         secure: false,
         ws: true
       },
       "/api/flames/": {
-        target: "http://loclahost:8080/api/flames/",
+        target: "http://localhost:8080/api/flames/",
         secure: false,
         ws: true
       }

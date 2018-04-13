@@ -5,6 +5,7 @@ import static java.util.Arrays.asList;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -16,9 +17,12 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
+import flamegrapher.model.Item;
 import flamegrapher.model.Processes;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class JavaFlightRecorder implements Profiler {
@@ -53,8 +57,47 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     @Override
-    public void list(Future<Processes> handler) {
-        jcmd(Collections.emptyList(), handler, Processes::fromString);
+    @SuppressWarnings("rawtypes")
+    public void list(Future<JsonArray> handler) {
+        Future<Processes> processesFuture = Future.future();
+        // Obtain the list of running Java processes
+        jcmd(Collections.emptyList(), processesFuture, Processes::fromString);
+
+        // For each process, obtain it's current status
+        processesFuture.compose(processes -> {
+            List<Future> futures = new ArrayList<>();
+            for (Item item : processes.items()
+                                      .values()) {
+                String pid = item.getPid();
+                // Will retrieve the status, i.e. recording or not recording, in
+                // parallel for all processes.
+                if (!item.getName()
+                         .contains("jcmd")) {
+                    Future<Item> itemFuture = Future.future();
+                    futures.add(itemFuture);
+                    status(pid, itemFuture);
+                }
+            }
+            // Once all are done, process results.
+            CompositeFuture.all(futures)
+                           .setHandler(h -> {
+                               if (h.succeeded()) {
+                                   JsonArray results = new JsonArray();
+                                   for (Future f : futures) {
+                                       Item status = (Item) f.result();
+                                       Item item = processes.items()
+                                                            .get(status.getPid());
+                                       item.setState(status.getState());
+                                       item.setRecordingNumber(status.getRecordingNumber());
+                                       JsonObject json = JsonObject.mapFrom(item);
+                                       results.add(json);
+                                   }
+                                   handler.complete(results);
+                               } else {
+                                   handler.fail(h.cause());
+                               }
+                           });
+        }, handler);
     }
 
     @Override
@@ -64,21 +107,17 @@ public class JavaFlightRecorder implements Profiler {
         Future<Void> firstHandler = Future.future();
         firstHandler.setHandler(s -> {
             if (s.succeeded()) {
-                jcmd(asList(pid, "JFR.start"), handler);                
+                jcmd(asList(pid, "JFR.start"), handler);
             } else {
                 handler.fail(s.cause());
             }
         });
         jcmd(asList(pid, "VM.unlock_commercial_features"), firstHandler);
     }
-    
+
     @Override
-    public void status(String pid, Future<String> handler) {
-        jcmd(asList(pid, "JFR.check"), handler, JavaFlightRecorder::bypass);
-        // TODO: Parse the recording
-        // lgomes$ jcmd 8683 JFR.check
-        // 8683:
-        // Recording: recording=1 name="Recording 1" (running)
+    public void status(String pid, Future<Item> handler) {
+        jcmd(asList(pid, "JFR.check"), handler, Item::fromStatus);
     }
 
     private static String bypass(String s) {
@@ -91,9 +130,7 @@ public class JavaFlightRecorder implements Profiler {
         // jcmd 8683 JFR.dump
         // filename=/Users/lgomes/gitclones/flamegrapher/test.jfr recording=1
         String filename = filename(pid, recording);
-        jcmd(asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording),
-        handler, 
-        s -> {
+        jcmd(asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording), handler, s -> {
             JsonObject json = new JsonObject();
             json.put("path", filename);
             return json;
@@ -135,15 +172,17 @@ public class JavaFlightRecorder implements Profiler {
     private <T> void jcmd(List<String> args, Future<T> handler) {
         jcmd(args, handler, null);
     }
-    
+
     private <T> void jcmd(List<String> args, Future<T> handler, Function<String, T> transformer) {
         Process process = spawn(vertx, "jcmd", args);
         Future<String> processCompleteHandler = completeOnExit(handler, transformer);
         StringBuilder str = new StringBuilder();
         StringBuilder err = new StringBuilder();
-        process.stdout().handler(str::append);
-        process.stderr().handler(err::append);
-        process.exitHandler(status -> { 
+        process.stdout()
+               .handler(str::append);
+        process.stderr()
+               .handler(err::append);
+        process.exitHandler(status -> {
             if (status.intValue() != 0) {
                 processCompleteHandler.fail(new ProfilerError("jcmd status code was " + status + ", stderr=" + err));
             } else {
