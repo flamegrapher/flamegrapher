@@ -76,6 +76,7 @@ if (process.env.NODE_ENV === "production") {
         warnings: false
       }
     }),
+    new webpack.optimize.AggressiveMergingPlugin(), // Merge chunks
     new webpack.LoaderOptionsPlugin({
       minimize: true
     })
