@@ -10,7 +10,7 @@
 	<properties>
 		<java.version>9</java.version>
 		<vertx.version>3.5.0</vertx.version>
-		<jmc.version>6.0.0.173472</jmc.version>
+		<jmc.version>6.0.0.173920</jmc.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<frontend.directory>frontend</frontend.directory>
 	</properties>
@@ -20,7 +20,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.7.0</version>
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
@@ -133,6 +133,26 @@
 	</build>
 
 	<dependencies>
+		<dependency>
+	        <groupId>javax.xml.bind</groupId>
+	        <artifactId>jaxb-api</artifactId>
+	        <version>2.3.0</version>
+	    </dependency>
+	    <dependency>
+	        <groupId>com.sun.xml.bind</groupId>
+	        <artifactId>jaxb-impl</artifactId>
+	        <version>2.3.0</version>
+	    </dependency>
+	    <dependency>
+	        <groupId>org.glassfish.jaxb</groupId>
+	        <artifactId>jaxb-runtime</artifactId>
+	        <version>2.3.0</version>
+	    </dependency>
+	    <dependency>
+	        <groupId>javax.activation</groupId>
+	        <artifactId>activation</artifactId>
+	        <version>1.1.1</version>
+	    </dependency>
 
 		<dependency>
 			<groupId>io.vertx</groupId>
@@ -150,6 +170,12 @@
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web</artifactId>
 			<version>${vertx.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.hubrick.vertx</groupId>
+			<artifactId>vertx-s3-client</artifactId>
+			<version>3.3.1</version>
 		</dependency>
 
 		<dependency>

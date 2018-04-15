@@ -93,7 +93,7 @@ public class MainVerticle extends AbstractVerticle {
                      fut.fail(result.cause());
                  }
              });
-        System.out.println("Listening on port: " + port);
+      System.out.println("Listening on port: " + port);
     }
 
     private <T> Future<T> newFuture(RoutingContext rc) {
