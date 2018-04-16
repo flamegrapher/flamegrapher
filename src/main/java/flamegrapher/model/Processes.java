@@ -1,5 +1,7 @@
 package flamegrapher.model;
 
+import static java.lang.System.lineSeparator;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,7 +19,7 @@ public class Processes {
 
     public static Processes fromString(String string) {
         Processes p = new Processes();
-        String[] lines = string.split("\n");
+        String[] lines = string.split(lineSeparator());
         for(String line : lines) {
             String[] parts = line.split(" ", 2);
             String pid = parts[0];

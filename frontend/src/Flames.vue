@@ -61,7 +61,7 @@ export default {
             .width(1110)
             .cellHeight(18)
             .transitionDuration(750)
-            .sort(true)
+            .sort(false)
             .title("");
 
     this.chartState = chart;
@@ -77,7 +77,7 @@ export default {
                 title: error.message,
                 text: error.response.data,
                 type: "error",
-                duration: 5000
+                duration: 10000
               });
             });
   }

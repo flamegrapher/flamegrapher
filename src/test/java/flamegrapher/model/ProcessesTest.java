@@ -60,10 +60,7 @@ public class ProcessesTest {
     
     @Test
     public void startStatus() {
-        String output = "73191:\n" + 
-                "Stopped recording 4.\n" + 
-                "NCELRND0380:flamegrapher lgomes$ jcmd 73191 JFR.start\n" + 
-                "73191:\n" + 
+        String output =  "73191:\n" + 
                 "Started recording 5. No limit (duration/maxsize/maxage) in use.\n" + 
                 "\n" + 
                 "Use JFR.dump recording=5 filename=FILEPATH to copy recording data to file.";

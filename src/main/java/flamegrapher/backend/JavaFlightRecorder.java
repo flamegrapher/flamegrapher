@@ -1,6 +1,7 @@
 package flamegrapher.backend;
 
 import static com.julienviet.childprocess.Process.spawn;
+import static io.vertx.core.CompositeFuture.all;
 import static java.util.Arrays.asList;
 
 import java.io.File;
@@ -19,9 +20,9 @@ import com.typesafe.config.ConfigFactory;
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
 import flamegrapher.model.Item;
 import flamegrapher.model.JVM;
+import flamegrapher.model.JVMType;
 import flamegrapher.model.Processes;
 import flamegrapher.model.State;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
@@ -31,16 +32,11 @@ public class JavaFlightRecorder implements Profiler {
 
     // TODO
     // * Add logging
-    // * Handle errors in the UI (HTTP 500)
-    // * Validate with Java 9
     // * Other event types
-    // * Add hook to update the listed processes every 30s automatically (or add button to do it manually?)
+    // * Add hook to update the listed processes every 30s automatically (or add
+    // button to do it manually?)
     // * Fallback to standard vertx config
-    // * Run VM.version on each process to filter out OpenJDK and old JVMs while running list 
-    // $ jcmd 49371 VM.version
-    // 49371:
-    // OpenJDK 64-Bit Server VM version 25.152-b12
-    // JDK 8.0_152
+    // * Try new version of Vertx (3.5.1)
 
     private final Config config;
     private final Vertx vertx;
@@ -57,41 +53,73 @@ public class JavaFlightRecorder implements Profiler {
         // Obtain the list of running Java processes
         jcmd(Collections.emptyList(), processesFuture, Processes::fromString);
 
-        // For each process, obtain it's current status
+        // For each process, check if it's a HotSpot JDK (JFR is only available
+        // for Hotspot for now).
+        List<Future> jvms = new ArrayList<>();
+
         processesFuture.compose(processes -> {
-            List<Future> futures = new ArrayList<>();
+
             for (Item item : processes.items()
                                       .values()) {
                 String pid = item.getPid();
-                // Will retrieve the status, i.e. recording or not recording, in
-                // parallel for all processes.
-                if (!item.getName()
-                         .contains("jcmd")) {
-                    Future<Item> itemFuture = Future.future();
-                    futures.add(itemFuture);
-                    status(pid, itemFuture);
+
+                if (notJcmdItself(item)) {
+                    Future<JVM> jvmFuture = Future.future();
+                    jvms.add(jvmFuture);
+                    // Check VM version and type
+                    jcmd(asList(pid, "VM.version"), jvmFuture, JVM::fromVMVersion);
                 }
             }
+
             // Once all are done, process results.
-            CompositeFuture.all(futures)
-                           .setHandler(h -> {
-                               if (h.succeeded()) {
-                                   JsonArray results = new JsonArray();
-                                   for (Future f : futures) {
-                                       Item status = (Item) f.result();
-                                       Item item = processes.items()
-                                                            .get(status.getPid());
-                                       item.setState(status.getState());
-                                       item.setRecordingNumber(status.getRecordingNumber());
-                                       JsonObject json = JsonObject.mapFrom(item);
-                                       results.add(json);
-                                   }
-                                   handler.complete(results);
-                               } else {
-                                   handler.fail(h.cause());
-                               }
-                           });
+            List<Future> jfrChecks = new ArrayList<>();
+
+            all(jvms).setHandler(h -> {
+                if (h.succeeded()) {
+                    for (Future f : jvms) {
+                        JVM jvm = (JVM) f.result();
+                        // Only HotSpot ships with JFR for now
+                        if (JVMType.HOTSPOT.equals(jvm.getType())) {
+                            Future<Item> statusCheck = Future.future();
+                            jfrChecks.add(statusCheck);
+                            // Will retrieve the status, i.e. recording or not
+                            // recording, in parallel for all processes.
+                            status(Integer.toString(jvm.getPid()), statusCheck);
+                        }
+                    }
+                    statusResults(handler, processes, jfrChecks);
+                } else {
+                    handler.fail(h.cause());
+                }
+            });
         }, handler);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private void statusResults(Future<JsonArray> handler, Processes processes, List<Future> jfrChecks) {
+        // Retrieve status results and assemble complete response
+        all(jfrChecks).setHandler(c -> {
+            if (c.succeeded()) {
+                JsonArray results = new JsonArray();
+                for (Future f : jfrChecks) {
+                    Item status = (Item) f.result();
+                    Item item = processes.items()
+                                         .get(status.getPid());
+                    item.setState(status.getState());
+                    item.setRecordingNumber(status.getRecordingNumber());
+                    JsonObject json = JsonObject.mapFrom(item);
+                    results.add(json);
+                }
+                handler.complete(results);
+            } else {
+                handler.fail(c.cause());
+            }
+        });
+    }
+
+    private boolean notJcmdItself(Item item) {
+        return !item.getName()
+                    .contains("jcmd");
     }
 
     @Override
@@ -133,14 +161,14 @@ public class JavaFlightRecorder implements Profiler {
                 json.put("path", filename);
                 return json;
             });
-            
+
         }, handler);
     }
 
     private List<String> argumentsForDump(String pid, String recording, String filename, JVM jvm) {
         List<String> args;
         // Command changed starting with JDK 9
-        if (jvm.getMajorVersion() == 9) {
+        if (jvm.getMajorVersion() > 8) {
             args = asList(pid, "JFR.dump", "filename=" + filename, "name=" + recording);
         } else {
             args = asList(pid, "JFR.dump", "filename=" + filename, "recording=" + recording);
@@ -155,19 +183,19 @@ public class JavaFlightRecorder implements Profiler {
 
     @Override
     public void stop(String pid, String recording, Future<Item> handler) {
-        
+
         // First we need to check the JVM version
         Future<JVM> jvmFuture = Future.future();
         jcmd(asList(pid, "VM.version"), jvmFuture, JVM::fromVMVersion);
 
         // Once we got the JVM version, we can execute the stop
         jvmFuture.compose(jvm -> {
-            String recordingParameter = (jvm.getMajorVersion() == 9 ? "name=" : "recording=");
-            
-            // Don't parse the output. If there's an error the jcmd method will fail
-            // the future.
-            // If we tried to stop a recording that was not running, we will simply
-            // ignore it for now.
+            String recordingParameter = (jvm.getMajorVersion() > 8 ? "name=" : "recording=");
+
+            // Don't parse the output. If there's an error the jcmd method will
+            // fail the future.
+            // If we tried to stop a recording that was not running, we will
+            // simply ignore it for now.
             jcmd(asList(pid, "JFR.stop", recordingParameter + recording), handler, s -> {
                 Item i = new Item(pid);
                 i.setState(State.NOT_RECORDING);

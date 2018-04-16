@@ -2,7 +2,10 @@
   "name": "frontend",
   "description": "Simple UI for Flamegrapher",
   "version": "1.0.0",
-  "author": "Leonardo Freitas Gomes <leonardo.f.gomes@gmail.com>",
+  "contributors": [
+    "Leonardo Freitas Gomes <leonardo.f.gomes@gmail.com>",
+    "Nenad Bogojevic <nenad@email.com>"
+  ],
   "private": false,
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
@@ -42,5 +45,5 @@
   },
   "main": "index.js",
   "repository": "https://github.com/flamegrapher/flamegrapher",
-  "license": "MIT"
+  "license": "Apache-2.0"
 }
