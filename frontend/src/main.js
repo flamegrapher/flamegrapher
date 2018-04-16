@@ -6,11 +6,15 @@ import Home from "./Home.vue";
 import Dumps from "./Dumps.vue";
 import Flames from "./Flames.vue";
 import { FlowerSpinner } from "epic-spinners";
+import Notifications from "vue-notification";
+import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-vue/dist/bootstrap-vue.css";
 
 Vue.use(BootstrapVue);
 Vue.use(VueRouter);
+Vue.use(Notifications);
+Vue.prototype.$http = axios;
 
 const routes = [
   { path: "/", component: Home },
@@ -33,3 +37,12 @@ new Vue({
   router,
   render: h => h(App)
 });
+
+// Configure axios error handling using interceptors
+axios.interceptors.response.use(function (response) {
+  return response;
+}, function (error) {
+  console.log(error);
+  return Promise.reject(error); // this is the important part
+});
+

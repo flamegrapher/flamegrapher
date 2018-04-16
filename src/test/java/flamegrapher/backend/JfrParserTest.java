@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.junit.Ignore;
 
 import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
 import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
@@ -12,6 +13,7 @@ import flamegrapher.backend.JsonOutputWriter.StackFrame;
 
 public class JfrParserTest {
 
+    @Ignore
     @Test
     public void test() throws IOException, CouldNotLoadRecordingException {
         File jfr = new File("/tmp/flamegrapher/64625.2.jfr");

@@ -9,11 +9,10 @@
       </b-row>
       <router-view :items="items" v-show="!loading"></router-view>
     </b-container>
+    <notifications />
   </div>
 </template>
 <script>
-import axios from "axios";
-
 export default {
   name: "app",
   data () {
@@ -24,14 +23,19 @@ export default {
   },
   created () {
     this.$nextTick(function () {
-      axios
+      this.$http
         .get("/api/list/")
         .then(response => {
           this.items = response.data;
           this.loading = false;
         })
-        .catch(e => {
-          console.log(e);
+        .catch(error => {
+          this.$notify({
+            title: error.message,
+            text: error.response.data,
+            type: "error",
+            duration: 10000
+          });
         });
     });
   }
