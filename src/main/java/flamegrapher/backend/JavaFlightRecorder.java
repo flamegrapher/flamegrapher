@@ -30,14 +30,6 @@ import io.vertx.core.json.JsonObject;
 
 public class JavaFlightRecorder implements Profiler {
 
-    // TODO
-    // * Add logging
-    // * Other event types
-    // * Add hook to update the listed processes every 30s automatically (or add
-    // button to do it manually?)
-    // * Fallback to standard vertx config
-    // * Try new version of Vertx (3.5.1)
-
     private final Config config;
     private final Vertx vertx;
 

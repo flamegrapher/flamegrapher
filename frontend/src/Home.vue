@@ -3,6 +3,9 @@
     <b-row>
         <b-col>
             <b-table striped hover fixed :items="items" :fields="fields">
+            <template slot="name" slot-scope="row">
+              <div class="text-truncate" v-b-tooltip.hover.top="row.item.name" >{{row.item.name}}</div>
+            </template>
             <template slot="state" slot-scope="row">
               <b-progress :value="100" variant="secondary" :animated="true" class="mb-3" v-show="row.item.loading"></b-progress>
               <div v-show="!row.item.loading">{{row.item.state}}</div>
