@@ -1,13 +1,14 @@
 
 # Based on by https://www.gitignore.io/api/macos,maven,gradle,eclipse,netbeans,intellij+iml,visualstudiocode
 repo/
-*.jfr
 
 ### Vert.x ###
 .vertx/
 
 frontend/node/
 node/
+
+.idea/
 
 ### Eclipse ###
 .classpath

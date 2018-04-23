@@ -1,10 +1,13 @@
 package flamegrapher.backend;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Test;
-import org.junit.Ignore;
 
 import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
 import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
@@ -13,12 +16,15 @@ import flamegrapher.backend.JsonOutputWriter.StackFrame;
 
 public class JfrParserTest {
 
-    @Ignore
     @Test
     public void test() throws IOException, CouldNotLoadRecordingException {
-        File jfr = new File("/tmp/flamegrapher/64625.2.jfr");
+        ClassLoader classLoader = getClass().getClassLoader();
+        String pathname = classLoader.getResource("58027.1.jfr").getFile();
+        File jfr = new File(pathname);
         JfrParser parse = new JfrParser();
         StackFrame s = parse.toJson(jfr, JdkTypeIDs.EXECUTION_SAMPLE);
-        System.out.println(s);
+        assertNotNull(s);
+        assertThat(s.getChildren().size(), equalTo(8));
+        
     }
 }
