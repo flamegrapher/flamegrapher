@@ -19,7 +19,7 @@ public class MainVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> fut) {
-        JavaFlightRecorder jfr = new JavaFlightRecorder(vertx);
+        JavaFlightRecorder jfr = new JavaFlightRecorder(vertx, config());
         Router router = Router.router(vertx);
         router.route()
               .handler(BodyHandler.create());
