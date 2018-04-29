@@ -36,7 +36,7 @@ public class JfrParser {
 
             IMemberAccessor<IQuantity, IItem> endTime = events.getType()
                                                               .getAccessor(JfrAttributes.END_TIME.getKey());
-            System.out.println(events);
+            // FIXME: For some reason, I've been getting these as null
 
             if (endTime == null || startTime == null) {
                 return;
