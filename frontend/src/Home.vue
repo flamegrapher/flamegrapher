@@ -3,6 +3,9 @@
     <b-row>
         <b-col>
             <b-table striped hover fixed :items="items" :fields="fields">
+            <template slot="name" slot-scope="row">
+              <div class="text-truncate" v-b-tooltip.hover.top="row.item.name" >{{row.item.name}}</div>
+            </template>
             <template slot="state" slot-scope="row">
               <b-progress :value="100" variant="secondary" :animated="true" class="mb-3" v-show="row.item.loading"></b-progress>
               <div v-show="!row.item.loading">{{row.item.state}}</div>
@@ -17,7 +20,7 @@
             </template>
             <template slot="actions" slot-scope="row">
                 <b-button-group size="sm">
-                  <b-btn :disabled="row.item.state === 'Recording' || row.item.state === 'Dumped'" @click="start(row.item)">Start</b-btn>
+                  <b-btn :disabled="row.item.state === 'Recording'" @click="start(row.item)">Start</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="stop(row.item)">Stop</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="dump(row.item)">Dump</b-btn>
                 </b-button-group>
@@ -35,7 +38,6 @@
 </div>
 </template>
 <script>
-import axios from "axios";
 export default {
   name: "home",
   data () {
@@ -70,7 +72,7 @@ export default {
       // Needs to call this.$set because loading is being dinamically added
       // and not reactive by default.
       this.$set(item, "loading", true);
-      axios
+      this.$http
         .get("/api/start/" + item.pid)
         .then(response => {
           item.state = response.data.state;
@@ -78,33 +80,40 @@ export default {
           item.loading = false;
         })
         .catch(e => {
-          console.log(e);
+          this.notifyError(e);
         });
     },
     stop: function (item) {
       this.$set(item, "loading", true);
-      axios
+      this.$http
         .get("/api/stop/" + item.pid + "/" + item.recording)
         .then(response => {
           item.state = response.data.state;
           item.loading = false;
         })
         .catch(e => {
-          console.log(e);
+          this.notifyError(e);
         });
     },
     dump: function (item) {
       this.$set(item, "loading", true);
-      axios
+      this.$http
         .get("/api/dump/" + item.pid + "/" + item.recording)
         .then(response => {
-          item.state = response.data.state;
           this.$set(item, "hasDump", true);
           item.loading = false;
         })
         .catch(e => {
-          console.log(e);
+          this.notifyError(e);
         });
+    },
+    notifyError: function (error) {
+      this.$notify({
+        title: error.message,
+        text: error.response.data,
+        type: "error",
+        duration: 10000
+      });
     }
   }
 };
