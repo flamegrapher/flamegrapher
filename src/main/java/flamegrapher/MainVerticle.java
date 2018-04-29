@@ -8,13 +8,16 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 public class MainVerticle extends AbstractVerticle {
-
+    private static final Logger logger = LoggerFactory.getLogger(MainVerticle.class);
+    
     private static final String APPLICATION_JSON_CHARSET_UTF_8 = "application/json; charset=utf-8";
 
     @Override
@@ -65,6 +68,30 @@ public class MainVerticle extends AbstractVerticle {
                   jfr.dump(pid, recording, newFuture(rc));
               });
 
+        router.get("/api/dumps")
+              .handler(rc -> {
+                  jfr.listDumps(newFuture(rc));
+              });
+    
+        router.get("/api/saves")
+              .handler(rc -> {
+                  jfr.listSavedDumps(newFuture(rc));
+              });
+
+        router.get("/api/saves/:key/flame")
+              .handler(rc -> {
+                  jfr.flameFromStorage(rc.request().getParam("key"), newFuture(rc));
+              });
+
+        router.get("/api/save/:pid/:recording")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  String recording = rc.request()
+                                       .getParam("recording");
+                  jfr.save(pid, recording, newFuture(rc));
+              });
+        
         router.get("/api/stop/:pid/:recording")
               .handler(rc -> {
                   String pid = rc.request()
@@ -120,6 +147,7 @@ public class MainVerticle extends AbstractVerticle {
     private static void managerError(RoutingContext rc, AsyncResult<?> result) {
         Throwable cause = result.cause();
         if (cause != null) {
+            logger.error("Exception occured ", cause);
             rc.response()
               .setStatusCode(500)
               .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)

@@ -32,14 +32,21 @@ public class JfrParser {
             IMemberAccessor<IMCStackTrace, IItem> accessor = events.getType()
                                                                    .getAccessor(EVENT_STACKTRACE.getKey());
             IMemberAccessor<IQuantity, IItem> startTime = events.getType()
-                                                                .getAccessor(JfrAttributes.EVENT_TIMESTAMP.getKey());
+                                                                .getAccessor(JfrAttributes.START_TIME.getKey());
 
             IMemberAccessor<IQuantity, IItem> endTime = events.getType()
                                                               .getAccessor(JfrAttributes.END_TIME.getKey());
+            System.out.println(events);
 
+            if (endTime == null || startTime == null) {
+                return;
+            }
             for (IItem item : events) {
                 Stack<String> stack = new Stack<>();
                 IMCStackTrace stackTrace = accessor.getMember(item);
+                if (startTime.getMember(item) == null || endTime.getMember(item) == null) {
+                    continue;
+                }
                 long start = startTime.getMember(item)
                                       .longValue();
                 long end = endTime.getMember(item)

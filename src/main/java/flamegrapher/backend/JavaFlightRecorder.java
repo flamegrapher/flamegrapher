@@ -7,6 +7,7 @@ import static java.util.Arrays.asList;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +16,8 @@ import java.util.function.Function;
 import com.hubrick.vertx.s3.client.S3Client;
 import com.hubrick.vertx.s3.client.S3ClientOptions;
 import com.hubrick.vertx.s3.model.request.AdaptiveUploadRequest;
+import com.hubrick.vertx.s3.model.request.GetBucketRequest;
+import com.hubrick.vertx.s3.model.request.GetObjectRequest;
 import com.julienviet.childprocess.Process;
 import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
 import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
@@ -44,12 +47,18 @@ public class JavaFlightRecorder implements Profiler {
     public JavaFlightRecorder(Vertx vertx) {
         this.vertx = vertx;
         this.config = ConfigFactory.load();
+        String server = config.getString("flamegrapher.s3-server");
+        String s3port = config.getString("flamegrapher.s3-port");
         clientOptions = new S3ClientOptions()
-            .setHostnameOverride(config.getString("flamegrapher.s3-server"))
+            .setHostnameOverride(server)
             .setAwsRegion("us-east-1")
             .setAwsServiceName("s3")
+            .setConnectTimeout(30000)
+            .setGlobalTimeoutMs(30000L)
+            .setDefaultPort(s3port != null && !s3port.trim().isEmpty() ? Integer.parseInt(s3port) : 80)
             .setAwsAccessKey(config.getString("flamegrapher.s3-access-key"))
             .setAwsSecretKey(config.getString("flamegrapher.s3-secret-key"));
+        
         s3Client = new S3Client(vertx, clientOptions);
     }
 
@@ -188,12 +197,13 @@ public class JavaFlightRecorder implements Profiler {
         return filename;
     }
 
+    @Override
     public void save(String pid, String recording, Future<Void> handler) {
         String filename = filename(pid, recording);
         vertx.fileSystem().open(filename, new OpenOptions().setRead(true), asyncFile -> {
             if (asyncFile.succeeded()) {
                 s3Client.adaptiveUpload(
-                    config.getString("flamegrapher.s3-bucket"),
+                    config.getString("flamegrapher.s3-bucket-dumps"),
                     filename,
                     new AdaptiveUploadRequest(asyncFile.result()).withContentType("application/jfr-dump"),
                     response -> {
@@ -209,6 +219,92 @@ public class JavaFlightRecorder implements Profiler {
                 handler.fail(asyncFile.cause());
             }
         });
+    }
+
+    @Override
+    public void listDumps(Future<JsonArray> handler) {
+            String dirName = config.getString("flamegrapher.jfr-dump-path");
+            vertx.fileSystem().readDir(dirName, ".+\\.jfr", 
+                    dirStream -> {
+                        if (dirStream.failed()) {
+                            handler.fail(dirStream.cause());
+                        } else {
+                            JsonArray results = new JsonArray();
+                            dirStream.result().stream().map(fullPath-> Paths.get(fullPath).getFileName()).forEach(file -> {
+                                String[] components = file.getFileName().toString().split("\\.");
+                                JsonObject json = new JsonObject();
+                                json.put("pid", components[0]);
+                                json.put("recording", components[1]);
+                                results.add(json);
+                            });
+                            handler.complete(results);                        
+                        }
+                    });
+    }
+    
+    @Override
+    public void listSavedDumps(Future<JsonArray> handler) {
+        s3Client.getBucket(
+                config.getString("flamegrapher.s3-bucket-dumps"),
+                new GetBucketRequest(),
+                response -> {
+                    JsonArray result = new JsonArray();
+                    response.getData().getContentsList().stream().forEach(contents -> {
+                        JsonObject json = new JsonObject();
+                        json.put("key", contents.getKey());
+                        result.add(json);
+                    });
+                    handler.complete(result);
+                },
+                e -> handler.fail(e)
+        );
+    }
+    
+    @Override
+    public void listSavedFlames(Future<JsonArray> handler) {
+        s3Client.getBucket(
+                config.getString("flamegrapher.s3-bucket-flames"),
+                new GetBucketRequest(),
+                response -> {
+                    JsonArray result = new JsonArray();
+                    response.getData().getContentsList().stream().forEach(contents -> {
+                        JsonObject json = new JsonObject();
+                        json.put("key", contents.getKey());
+                        result.add(json);
+                    });
+                    handler.complete(result);
+                },
+                e -> handler.fail(e)
+        );
+    }
+    
+    @Override
+    public void flameFromStorage(String storageKey, Future<StackFrame> handler) {
+        s3Client.getObject(
+                config.getString("flamegrapher.s3-bucket-flames"),
+                storageKey,
+                new GetObjectRequest(),
+                storageResult -> {
+                    String filename = filename("storage", storageKey);
+                    JfrParser parser = new JfrParser();
+                    vertx.<StackFrame>executeBlocking(future -> {
+                        try {
+                            StackFrame json = parser.toJson(new File(filename), JdkTypeIDs.EXECUTION_SAMPLE);
+                            future.complete(json);
+                        } catch (IOException | CouldNotLoadRecordingException e) {
+                            handler.fail(e);
+                        }
+                    }, result -> {
+
+                        if (result.succeeded()) {
+                            handler.complete(result.result());
+                        } else {
+                            handler.fail(result.cause());
+                        }
+                    });
+                    
+                },
+                e -> handler.fail(e));
     }
 
     @Override
