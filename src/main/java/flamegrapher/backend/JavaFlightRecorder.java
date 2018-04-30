@@ -14,8 +14,6 @@ import java.util.function.Function;
 import com.julienviet.childprocess.Process;
 import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
 import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
 import flamegrapher.model.Item;
@@ -30,12 +28,12 @@ import io.vertx.core.json.JsonObject;
 
 public class JavaFlightRecorder implements Profiler {
 
-    private final Config config;
+    private final JsonObject config;
     private final Vertx vertx;
 
-    public JavaFlightRecorder(Vertx vertx) {
+    public JavaFlightRecorder(Vertx vertx, JsonObject config) {
         this.vertx = vertx;
-        this.config = ConfigFactory.load();
+        this.config = config;
     }
 
     @Override
@@ -169,7 +167,7 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     private String filename(String pid, String recording) {
-        String filename = config.getString("flamegrapher.jfr-dump-path") + pid + "." + recording + ".jfr";
+        String filename = config.getString("flamegrapher.jfr-dump-path", "/tmp/flamegrapher/") + pid + "." + recording + ".jfr";
         return filename;
     }
 
