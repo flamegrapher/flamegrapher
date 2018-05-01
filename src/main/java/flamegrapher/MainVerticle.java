@@ -1,20 +1,25 @@
 package flamegrapher;
 
 import flamegrapher.backend.JavaFlightRecorder;
+import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 public class MainVerticle extends AbstractVerticle {
-
+    private static final Logger logger = LoggerFactory.getLogger(MainVerticle.class);
+    
     private static final String APPLICATION_JSON_CHARSET_UTF_8 = "application/json; charset=utf-8";
 
     @Override
@@ -65,6 +70,44 @@ public class MainVerticle extends AbstractVerticle {
                   jfr.dump(pid, recording, newFuture(rc));
               });
 
+        router.get("/api/dumps")
+              .handler(rc -> {
+                  jfr.listDumps(newFuture(rc));
+              });
+    
+        router.get("/api/saves")
+              .handler(rc -> {
+                  jfr.listSavedDumps(newFuture(rc));
+              });
+
+        router.get("/api/saves/flames")
+              .handler(rc -> {
+                  jfr.listSavedFlames(newFuture(rc));
+              });
+
+        router.get("/api/saves/:key/flame")
+              .handler(rc -> {
+                  jfr.flameFromStorage(rc.request().getParam("key"), newFuture(rc));
+              });
+
+        router.post("/api/save/:pid/:recording")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  String recording = rc.request()
+                                       .getParam("recording");
+                  jfr.save(pid, recording, newFuture(rc));
+              });
+        
+        router.post("/api/save/flame/:pid/:recording")
+              .handler(rc -> {
+                  String pid = rc.request()
+                                 .getParam("pid");
+                  String recording = rc.request()
+                                       .getParam("recording");
+                  jfr.saveFlame(pid, recording, newFuture(rc));
+              });
+  
         router.get("/api/stop/:pid/:recording")
               .handler(rc -> {
                   String pid = rc.request()
@@ -83,7 +126,7 @@ public class MainVerticle extends AbstractVerticle {
                   jfr.flames(pid, recording, newFuture(rc));
               });
 
-        Integer port = config().getInteger("http.port", 8080);
+        Integer port = config().getInteger("FLAMEGRAPHER_HTTP_PORT", 8080);
         vertx.createHttpServer()
              .requestHandler(router::accept)
              .listen(port, result -> {
@@ -93,7 +136,7 @@ public class MainVerticle extends AbstractVerticle {
                      fut.fail(result.cause());
                  }
              });
-        System.out.println("Listening on port: " + port);
+      System.out.println("Listening on port: " + port);
     }
 
     private <T> Future<T> newFuture(RoutingContext rc) {
@@ -120,6 +163,7 @@ public class MainVerticle extends AbstractVerticle {
     private static void managerError(RoutingContext rc, AsyncResult<?> result) {
         Throwable cause = result.cause();
         if (cause != null) {
+            logger.error("Exception occured ", cause);
             rc.response()
               .setStatusCode(500)
               .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
@@ -132,7 +176,15 @@ public class MainVerticle extends AbstractVerticle {
     }
 
     public static void main(String[] args) {
-        Vertx.vertx()
-             .deployVerticle(MainVerticle.class.getName());
+        Vertx vertx = Vertx.vertx();
+        ConfigRetriever retriever = ConfigRetriever.create(vertx);
+        retriever.getConfig(ar -> {
+            if (ar.failed()) {
+                 logger.error("Unable to load configuration, using default.");
+                 vertx.deployVerticle(MainVerticle.class.getName());
+              } else {
+                 vertx.deployVerticle(MainVerticle.class.getName(), new DeploymentOptions().setConfig(ar.result()));
+              }
+            });
     }
 }

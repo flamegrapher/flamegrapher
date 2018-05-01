@@ -20,7 +20,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.7.0</version>
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
@@ -133,7 +133,6 @@
 	</build>
 
 	<dependencies>
-
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web-client</artifactId>
@@ -152,6 +151,12 @@
 			<version>${vertx.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-config</artifactId>
+			<version>${vertx.version}</version>
+		</dependency>
+		
 		<dependency>
 			<groupId>com.julienviet</groupId>
 			<artifactId>childprocess-vertx-ext</artifactId>
@@ -201,6 +206,18 @@
 		</dependency>
 
 		<!-- End of JAXB associated dependencies -->
+
+		<dependency>
+			<groupId>com.hubrick.vertx</groupId>
+			<artifactId>vertx-s3-client</artifactId>
+			<version>3.3.1</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-jdk14</artifactId>
+		    <version>1.7.25</version>
+		</dependency>
 
 		<dependency>
 			<groupId>io.vertx</groupId>

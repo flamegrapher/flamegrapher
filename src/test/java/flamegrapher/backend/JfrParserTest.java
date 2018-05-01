@@ -15,7 +15,6 @@ import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
 
 public class JfrParserTest {
-
     @Test
     public void test() throws IOException, CouldNotLoadRecordingException {
         ClassLoader classLoader = getClass().getClassLoader();
