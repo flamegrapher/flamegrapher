@@ -20,7 +20,7 @@ public interface Profiler {
     
     void flames(String pid, String recording, Future<StackFrame> handler);
 
-    void save(String pid, String recording, Future<Void> handler);
+    void save(String pid, String recording, Future<JsonObject> handler);
     
     void listDumps(Future<JsonArray> handler);
 
@@ -29,4 +29,6 @@ public interface Profiler {
     void listSavedFlames(Future<JsonArray> handler);
 
     void flameFromStorage(String storageKey, Future<StackFrame> handler);
+
+    void saveFlame(String pid, String recording, Future<JsonObject> handler);
 }
