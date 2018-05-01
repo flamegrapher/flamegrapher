@@ -1,0 +1,4 @@
+{
+    "flamegrapher.jfr-dump-path" : "/tmp/flamegrapher/",
+    "http.port" : 8080
+}

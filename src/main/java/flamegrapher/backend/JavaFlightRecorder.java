@@ -22,8 +22,6 @@ import com.hubrick.vertx.s3.model.request.PutObjectRequest;
 import com.julienviet.childprocess.Process;
 import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
 import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
 import flamegrapher.model.Item;
@@ -45,43 +43,16 @@ import io.vertx.core.logging.LoggerFactory;
 public class JavaFlightRecorder implements Profiler {
   private static final Logger logger = LoggerFactory.getLogger(JavaFlightRecorder.class);
 
-    private final Config config;
+    private final JsonObject config;
     private final Vertx vertx;
     S3Client s3Client;
     String recordingOption = "name";
     String dumpsBucket;
     String flamesBucket;
 
-    public JavaFlightRecorder(Vertx vertx) {
+    public JavaFlightRecorder(Vertx vertx, JsonObject config) {
         this.vertx = vertx;
-        this.config = ConfigFactory.load();
-        ConfigRetriever retriever = ConfigRetriever.create(vertx);
-        Future<JsonObject> configFuture = ConfigRetriever.getConfigAsFuture(retriever);
-        configFuture.setHandler(ar -> {
-          if (ar.failed()) {
-            logger.fatal("Error reading configuration", ar.cause());
-            vertx.close();
-            // Failed to retrieve the configuration
-          } else {
-            System.out.println(ar.result());
-            JsonObject cfg = ar.result();
-            String server = cfg.getString("flamegrapher.s3-server");
-            String s3port = cfg.getString("flamegrapher.s3-port", "80");
-            S3ClientOptions clientOptions = new S3ClientOptions()
-                .setHostnameOverride(server)
-                .setAwsRegion("us-east-1")
-                .setAwsServiceName("s3")
-                .setConnectTimeout(30000)
-                .setGlobalTimeoutMs(30000L)
-                .setDefaultPort(Integer.parseInt(s3port))
-                .setAwsAccessKey(cfg.getString("flamegrapher.s3-access-key"))
-                .setAwsSecretKey(cfg.getString("flamegrapher.s3-secret-key"));
-            
-            s3Client = new S3Client(vertx, clientOptions);
-            dumpsBucket = config.getString("flamegrapher.s3-bucket-dumps");
-            flamesBucket = config.getString("flamegrapher.s3-bucket-flames");
-          }
-        });
+        this.config = config;
     }
 
     @Override
@@ -215,7 +186,7 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     private String filename(String pid, String recording) {
-        String filename = config.getString("flamegrapher.jfr-dump-path") + pid + "." + recording + ".jfr";
+        String filename = config.getString("flamegrapher.jfr-dump-path", "/tmp/flamegrapher/") + pid + "." + recording + ".jfr";
         return filename;
     }
 
