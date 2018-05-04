@@ -1,6 +1,6 @@
 <template>
 <div>
-    <b-row>
+    <b-row ref="table">
         <b-col>
             <b-table striped hover fixed :items="items" :fields="fields">
             <template slot="name" slot-scope="row">
@@ -31,7 +31,7 @@
     <b-row class="text-left">
         <b-col>
           <a :href="`#/dumps`">
-            View all available dumps
+            View all local dumps
           </a>
         </b-col>
     </b-row>
@@ -73,7 +73,7 @@ export default {
       // and not reactive by default.
       this.$set(item, "loading", true);
       this.$http
-        .get("/api/start/" + item.pid)
+        .post("/api/start/" + item.pid)
         .then(response => {
           item.state = response.data.state;
           item.recording = response.data.recording;
@@ -86,7 +86,7 @@ export default {
     stop: function (item) {
       this.$set(item, "loading", true);
       this.$http
-        .get("/api/stop/" + item.pid + "/" + item.recording)
+        .post("/api/stop/" + item.pid + "/" + item.recording)
         .then(response => {
           item.state = response.data.state;
           item.loading = false;
@@ -98,7 +98,7 @@ export default {
     dump: function (item) {
       this.$set(item, "loading", true);
       this.$http
-        .get("/api/dump/" + item.pid + "/" + item.recording)
+        .post("/api/dump/" + item.pid + "/" + item.recording)
         .then(response => {
           this.$set(item, "hasDump", true);
           item.loading = false;
@@ -115,6 +115,12 @@ export default {
         duration: 10000
       });
     }
+  },
+  mounted () {
+    // this.$nextTick(function () {
+    //   this.$refs.table.scrollTop = 0;
+    // });
+    window.scrollTo(0, 0);
   }
 };
 </script>

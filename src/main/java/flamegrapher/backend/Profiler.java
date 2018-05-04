@@ -5,6 +5,7 @@ import flamegrapher.model.Item;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
 
 public interface Profiler {
     
@@ -31,4 +32,6 @@ public interface Profiler {
     void flameFromStorage(String storageKey, Future<StackFrame> handler);
 
     void saveFlame(String pid, String recording, Future<JsonObject> handler);
+
+    Future<Void> dumpFromLocal(String filename, RoutingContext rc);
 }

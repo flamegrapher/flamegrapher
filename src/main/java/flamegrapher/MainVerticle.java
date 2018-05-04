@@ -19,7 +19,7 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 public class MainVerticle extends AbstractVerticle {
     private static final Logger logger = LoggerFactory.getLogger(MainVerticle.class);
-    
+
     private static final String APPLICATION_JSON_CHARSET_UTF_8 = "application/json; charset=utf-8";
 
     @Override
@@ -38,7 +38,8 @@ public class MainVerticle extends AbstractVerticle {
 
         // Bind "/" to our hello message
         router.route("/flames/*")
-              .handler(StaticHandler.create("flames").setCachingEnabled(false));
+              .handler(StaticHandler.create("flames")
+                                    .setCachingEnabled(false));
 
         router.get("/api/list")
               .handler(rc -> {
@@ -46,7 +47,7 @@ public class MainVerticle extends AbstractVerticle {
               })
               .failureHandler(this::failureHandler);
 
-        router.get("/api/start/:pid")
+        router.post("/api/start/:pid")
               .handler(rc -> {
                   String pid = rc.request()
                                  .getParam("pid");
@@ -61,7 +62,7 @@ public class MainVerticle extends AbstractVerticle {
                   jfr.status(pid, newFuture(rc));
               });
 
-        router.get("/api/dump/:pid/:recording")
+        router.post("/api/dump/:pid/:recording")
               .handler(rc -> {
                   String pid = rc.request()
                                  .getParam("pid");
@@ -74,7 +75,19 @@ public class MainVerticle extends AbstractVerticle {
               .handler(rc -> {
                   jfr.listDumps(newFuture(rc));
               });
-    
+
+        router.get("/api/dump/:filename")
+              .handler(rc -> {
+                  String filename = rc.request()
+                                 .getParam("filename");
+                  Future<Void> status = jfr.dumpFromLocal(filename, rc);
+                  status.setHandler(result -> {
+                      if (result.failed()) {
+                          managerError(rc, result);
+                      }
+                  });
+              });
+
         router.get("/api/saves")
               .handler(rc -> {
                   jfr.listSavedDumps(newFuture(rc));
@@ -87,7 +100,9 @@ public class MainVerticle extends AbstractVerticle {
 
         router.get("/api/saves/:key/flame")
               .handler(rc -> {
-                  jfr.flameFromStorage(rc.request().getParam("key"), newFuture(rc));
+                  jfr.flameFromStorage(rc.request()
+                                         .getParam("key"),
+                          newFuture(rc));
               });
 
         router.post("/api/save/:pid/:recording")
@@ -98,7 +113,7 @@ public class MainVerticle extends AbstractVerticle {
                                        .getParam("recording");
                   jfr.save(pid, recording, newFuture(rc));
               });
-        
+
         router.post("/api/save/flame/:pid/:recording")
               .handler(rc -> {
                   String pid = rc.request()
@@ -107,8 +122,8 @@ public class MainVerticle extends AbstractVerticle {
                                        .getParam("recording");
                   jfr.saveFlame(pid, recording, newFuture(rc));
               });
-  
-        router.get("/api/stop/:pid/:recording")
+
+        router.post("/api/stop/:pid/:recording")
               .handler(rc -> {
                   String pid = rc.request()
                                  .getParam("pid");
@@ -136,7 +151,7 @@ public class MainVerticle extends AbstractVerticle {
                      fut.fail(result.cause());
                  }
              });
-      System.out.println("Listening on port: " + port);
+        System.out.println("Listening on port: " + port);
     }
 
     private <T> Future<T> newFuture(RoutingContext rc) {
@@ -152,12 +167,13 @@ public class MainVerticle extends AbstractVerticle {
         });
         return future;
     }
-    
+
     private void failureHandler(RoutingContext rc) {
-        rc.response().setStatusCode(500)
+        rc.response()
+          .setStatusCode(500)
           .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
           .end(Json.encodePrettily(new ErrorResult("" + rc.failure())));
-        
+
     }
 
     private static void managerError(RoutingContext rc, AsyncResult<?> result) {
@@ -167,10 +183,12 @@ public class MainVerticle extends AbstractVerticle {
             rc.response()
               .setStatusCode(500)
               .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
-              .end(Json.encodePrettily(new ErrorResult(result.cause().getMessage())));
+              .end(Json.encodePrettily(new ErrorResult(result.cause()
+                                                             .getMessage())));
         } else {
-            rc.response().setStatusCode(500)
-            .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
+            rc.response()
+              .setStatusCode(500)
+              .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8)
               .end(Json.encodePrettily(new ErrorResult("Unknown error cause")));
         }
     }
@@ -180,11 +198,11 @@ public class MainVerticle extends AbstractVerticle {
         ConfigRetriever retriever = ConfigRetriever.create(vertx);
         retriever.getConfig(ar -> {
             if (ar.failed()) {
-                 logger.error("Unable to load configuration, using default.");
-                 vertx.deployVerticle(MainVerticle.class.getName());
-              } else {
-                 vertx.deployVerticle(MainVerticle.class.getName(), new DeploymentOptions().setConfig(ar.result()));
-              }
-            });
+                logger.error("Unable to load configuration, using default.");
+                vertx.deployVerticle(MainVerticle.class.getName());
+            } else {
+                vertx.deployVerticle(MainVerticle.class.getName(), new DeploymentOptions().setConfig(ar.result()));
+            }
+        });
     }
 }
