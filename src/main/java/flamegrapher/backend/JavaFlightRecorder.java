@@ -39,6 +39,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.RoutingContext;
 
 public class JavaFlightRecorder implements Profiler {
     private static final Logger logger = LoggerFactory.getLogger(JavaFlightRecorder.class);
@@ -291,6 +292,15 @@ public class JavaFlightRecorder implements Profiler {
                             handler.complete(results);                        
                         }
                     });
+    }
+    
+    @Override
+    public Future<Void> dumpFromLocal(String filename, RoutingContext rc) {
+        Future<Void> status = Future.future();
+        // File name example: 164722.1.jfr
+        String path = workingDir() + "/" + filename;
+        rc.response().sendFile(path, status);
+        return status;
     }
     
     @Override
