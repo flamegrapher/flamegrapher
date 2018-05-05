@@ -19,16 +19,19 @@ import com.oracle.jmc.flightrecorder.JfrAttributes;
 import com.oracle.jmc.flightrecorder.JfrLoaderToolkit;
 
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 public class JfrParser {
 
-    public StackFrame toJson(File jfr, String eventType) throws IOException, CouldNotLoadRecordingException {
+    private static final Logger logger = LoggerFactory.getLogger(JfrParser.class);
+
+    public StackFrame toJson(File jfr, String... eventTypes) throws IOException, CouldNotLoadRecordingException {
         IItemCollection filtered = JfrLoaderToolkit.loadEvents(jfr)
-                                                   .apply(ItemFilters.type(eventType));
+                                                   .apply(ItemFilters.type(eventTypes));
+
         JsonOutputWriter writer = new JsonOutputWriter();
         filtered.forEach(events -> {
-
-            // IMCStackTrace stack =
             IMemberAccessor<IMCStackTrace, IItem> accessor = events.getType()
                                                                    .getAccessor(EVENT_STACKTRACE.getKey());
             IMemberAccessor<IQuantity, IItem> startTime = events.getType()
@@ -36,15 +39,24 @@ public class JfrParser {
 
             IMemberAccessor<IQuantity, IItem> endTime = events.getType()
                                                               .getAccessor(JfrAttributes.END_TIME.getKey());
-            // FIXME: For some reason, I've been getting these as null
 
-            if (endTime == null || startTime == null) {
+            if (startTime == null && endTime == null) {
                 return;
+            }
+
+            if (endTime == null) {
+                endTime = startTime;
+            }
+            if (startTime == null) {
+                // When the event has only end time, it means that it's only an
+                // occurence, thus we set startTime = endTime.
+                startTime = endTime;
             }
             for (IItem item : events) {
                 Stack<String> stack = new Stack<>();
                 IMCStackTrace stackTrace = accessor.getMember(item);
-                if (startTime.getMember(item) == null || endTime.getMember(item) == null) {
+                if (startTime.getMember(item) == null || endTime.getMember(item) == null
+                        || stackTrace.getFrames() == null) {
                     continue;
                 }
                 long start = startTime.getMember(item)
@@ -57,7 +69,6 @@ public class JfrParser {
                           });
                 long duration = end - start;
                 writer.processEvent(start, end, duration, stack, 1L);
-
             }
         });
 
@@ -65,11 +76,13 @@ public class JfrParser {
     }
 
     private String getFrameName(IMCFrame frame) {
+        // TODO: Make it a configuration parameter
         boolean ignoreLineNumbers = false;
 
         StringBuilder methodBuilder = new StringBuilder();
         IMCMethod method = frame.getMethod();
-        methodBuilder.append(method.getType().getFullName())
+        methodBuilder.append(method.getType()
+                                   .getFullName())
                      .append("#")
                      .append(method.getMethodName());
 

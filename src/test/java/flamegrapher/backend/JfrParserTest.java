@@ -16,14 +16,35 @@ import flamegrapher.backend.JsonOutputWriter.StackFrame;
 
 public class JfrParserTest {
     @Test
-    public void test() throws IOException, CouldNotLoadRecordingException {
-        ClassLoader classLoader = getClass().getClassLoader();
-        String pathname = classLoader.getResource("58027.1.jfr").getFile();
-        File jfr = new File(pathname);
+    public void jdk8_mac() throws IOException, CouldNotLoadRecordingException {
+        File jfr = getFile("58027.1.jfr");
         JfrParser parse = new JfrParser();
         StackFrame s = parse.toJson(jfr, JdkTypeIDs.EXECUTION_SAMPLE);
         assertNotNull(s);
-        assertThat(s.getChildren().size(), equalTo(8));
-        
+        assertThat(s.getChildren()
+                    .size(),
+                equalTo(8));
+
     }
+
+    @Test
+    public void jdk10_mac() throws IOException, CouldNotLoadRecordingException {
+        File jfr = getFile("78460.1.jfr");
+        JfrParser parse = new JfrParser();
+        StackFrame s = parse.toJson(jfr, JdkTypeIDs.EXECUTION_SAMPLE, "com.oracle.jdk.NativeMethodSample");
+        assertNotNull(s);
+        assertNotNull(s.getChildren());
+        assertThat(s.getChildren()
+                    .size(),
+                equalTo(3));
+    }
+
+    private File getFile(String filename) {
+        ClassLoader classLoader = getClass().getClassLoader();
+        String pathname = classLoader.getResource(filename)
+                                     .getFile();
+        File jfr = new File(pathname);
+        return jfr;
+    }
+
 }
