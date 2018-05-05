@@ -8,6 +8,7 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
@@ -142,16 +143,15 @@ public class MainVerticle extends AbstractVerticle {
               });
 
         Integer port = config().getInteger("FLAMEGRAPHER_HTTP_PORT", 8080);
+        Future<HttpServer> httpServerFuture = Future.future();
         vertx.createHttpServer()
              .requestHandler(router::accept)
-             .listen(port, result -> {
-                 if (result.succeeded()) {
-                     fut.complete();
-                 } else {
-                     fut.fail(result.cause());
-                 }
-             });
-        System.out.println("Listening on port: " + port);
+             .listen(port, httpServerFuture);
+
+        httpServerFuture.compose(server -> {
+            logger.info("Listening on port " + server.actualPort());
+            fut.complete();
+        }, fut);
     }
 
     private <T> Future<T> newFuture(RoutingContext rc) {

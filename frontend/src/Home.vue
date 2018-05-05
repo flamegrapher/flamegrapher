@@ -1,6 +1,6 @@
 <template>
 <div>
-    <b-row ref="table">
+    <b-row>
         <b-col>
             <b-table striped hover fixed :items="items" :fields="fields">
             <template slot="name" slot-scope="row">
@@ -23,6 +23,7 @@
                   <b-btn :disabled="row.item.state === 'Recording'" @click="start(row.item)">Start</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="stop(row.item)">Stop</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="dump(row.item)">Dump</b-btn>
+                  <b-btn size="sm" :disabled="!row.item.hasDump" @click="save(row.item)">Save</b-btn>
                 </b-button-group>
             </template>
             </b-table>
@@ -107,6 +108,24 @@ export default {
           this.notifyError(e);
         });
     },
+    save: function (item) {
+      this.$set(item, "loading", true);
+      this.$http
+        .post("/api/save/" + item.pid + "/" + item.recording)
+        .then(response => {
+          item.loading = false;
+          this.$notify({
+            title: "Success",
+            text: "Dump saved to S3 storage: " + response.data.key,
+            type: "success"
+          });
+          console.log(response);
+        })
+        .catch(e => {
+          this.notifyError(e);
+          item.loading = false;
+        });
+    },
     notifyError: function (error) {
       this.$notify({
         title: error.message,
@@ -117,9 +136,7 @@ export default {
     }
   },
   mounted () {
-    // this.$nextTick(function () {
-    //   this.$refs.table.scrollTop = 0;
-    // });
+    // Scroll up
     window.scrollTo(0, 0);
   }
 };
