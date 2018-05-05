@@ -42,11 +42,12 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 
 public class JavaFlightRecorder implements Profiler {
+    
     private static final Logger logger = LoggerFactory.getLogger(JavaFlightRecorder.class);
     private static final String APPLICATION_JSON_CHARSET_UTF_8 = "application/json; charset=utf-8";
     /**
      * This JDK event type is not yet available on JdkTypeIDs class, but is used
-     * starting with JFK 9. Method profiling is now split into
+     * starting with JDK 9. Method profiling is now split into
      * <code>com.oracle.jdk.ExecutionSample</code> and
      * <code>com.oracle.jdk.NativeMethodSample</code>
      */

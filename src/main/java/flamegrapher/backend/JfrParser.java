@@ -44,14 +44,15 @@ public class JfrParser {
                 return;
             }
 
+            // When the event has only start or end time, it means that it's only an
+            // occurence, thus we set both values to the one that's available, i.e. not null.
             if (endTime == null) {
                 endTime = startTime;
             }
             if (startTime == null) {
-                // When the event has only end time, it means that it's only an
-                // occurence, thus we set startTime = endTime.
                 startTime = endTime;
             }
+
             for (IItem item : events) {
                 Stack<String> stack = new Stack<>();
                 IMCStackTrace stackTrace = accessor.getMember(item);
