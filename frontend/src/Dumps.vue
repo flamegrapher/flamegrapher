@@ -9,6 +9,7 @@
               <template slot="actions" slot-scope="row">
                 <b-btn size="sm" :href="`/api/dump/${row.item.pid}.${row.item.recording}.jfr`">Download</b-btn>
                 <b-btn size="sm" :href="`#/flames/${row.item.pid}/${row.item.recording}`">View flames</b-btn>
+                <b-btn size="sm" @click="save(row.item)">Save to storage</b-btn>
               </template>
               </b-table>
           </b-col>
@@ -17,8 +18,10 @@
     </div>
 </template>
 <script>
+import SavesMixin from "./SavesMixin";
 export default {
   name: "dumps",
+  mixins: [SavesMixin],
   data () {
     return {
       loading: true,
@@ -45,13 +48,8 @@ export default {
         this.items = response.data;
         this.loading = false;
       })
-      .catch(error => {
-        this.$notify({
-          title: error.message,
-          text: error.response.data,
-          type: "error",
-          duration: 10000
-        });
+      .catch(e => {
+        this.notifyError(e);
       });
   }
 };
