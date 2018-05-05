@@ -1,6 +1,6 @@
 <template>
 <div>
-    <b-row ref="table">
+    <b-row>
         <b-col>
             <b-table striped hover fixed :items="items" :fields="fields">
             <template slot="name" slot-scope="row">
@@ -23,6 +23,7 @@
                   <b-btn :disabled="row.item.state === 'Recording'" @click="start(row.item)">Start</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="stop(row.item)">Stop</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="dump(row.item)">Dump</b-btn>
+                  <b-btn size="sm" :disabled="!row.item.hasDump" @click="saveDump(row.item)">Save</b-btn>
                 </b-button-group>
             </template>
             </b-table>
@@ -30,16 +31,18 @@
     </b-row>
     <b-row class="text-left">
         <b-col>
-          <a :href="`#/dumps`">
-            View all local dumps
-          </a>
+          <a :href="`#/dumps`">All local dumps</a>
+           | 
+          <a :href="`#/saves`">All remote storage dumps</a>
         </b-col>
     </b-row>
 </div>
 </template>
 <script>
+import SavesMixin from "./SavesMixin";
 export default {
   name: "home",
+  mixins: [SavesMixin],
   data () {
     return {
       fields: [
@@ -106,20 +109,10 @@ export default {
         .catch(e => {
           this.notifyError(e);
         });
-    },
-    notifyError: function (error) {
-      this.$notify({
-        title: error.message,
-        text: error.response.data,
-        type: "error",
-        duration: 10000
-      });
     }
   },
   mounted () {
-    // this.$nextTick(function () {
-    //   this.$refs.table.scrollTop = 0;
-    // });
+    // Scroll up
     window.scrollTo(0, 0);
   }
 };

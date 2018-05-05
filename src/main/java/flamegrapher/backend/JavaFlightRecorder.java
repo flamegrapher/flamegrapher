@@ -348,6 +348,7 @@ public class JavaFlightRecorder implements Profiler {
                 storageKey,
                 new GetObjectRequest(),
                 storageResult -> {
+
                     String filename = filename("storage", storageKey);
                     generateFlame(filename, handler);
                 },
