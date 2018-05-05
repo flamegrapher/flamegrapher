@@ -16,6 +16,7 @@
                         <b-input-group-append>
                             <b-btn size="sm" variant="link" @click="reset()">Reset zoom</b-btn>
                             <b-btn size="sm" variant="link" @click="clear()">Clear</b-btn>
+                            <b-btn size="sm" variant="link" @click="saveToStorage()">Save to storage</b-btn>
                         </b-input-group-append>
                     </b-input-group>
                 </b-form>
@@ -34,9 +35,11 @@
 import { flamegraph } from "d3-flame-graph";
 import { select } from "d3-selection";
 import "d3-flame-graph/dist/d3-flamegraph.css";
+import SavesMixin from "./SavesMixin";
 
 export default {
   name: "flames",
+  mixins: [SavesMixin],
   data () {
     return {
       chartState: [],
@@ -54,6 +57,9 @@ export default {
     clear: function () {
       this.searchExpression = "";
       this.chartState.clear();
+    },
+    saveToStorage: function () {
+      this.saveFlames(this.$route.params);
     }
   },
   mounted () {
@@ -65,7 +71,7 @@ export default {
             .title("");
 
     this.chartState = chart;
-    const url = "/api/flames/" + this.$route.params.pid + "/" + this.$route.params.recordingId;
+    const url = "/api/flames/" + this.$route.params.pid + "/" + this.$route.params.recording;
     this.$http.get(url)
             .then(response => {
               select(`#chart`)

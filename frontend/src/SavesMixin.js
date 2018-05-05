@@ -1,14 +1,14 @@
 export default {
   methods: {
-    save: function (item) {
+    save: function (item, api, message) {
       this.$set(item, "loading", true);
       this.$http
-                .post("/api/save/" + item.pid + "/" + item.recording)
+                .post(api + item.pid + "/" + item.recording)
                 .then(response => {
                   item.loading = false;
                   this.$notify({
                     title: "Success",
-                    text: "Dump saved to S3 storage: " + response.data.key,
+                    text: message + response.data.key,
                     type: "success"
                   });
                 })
@@ -16,6 +16,12 @@ export default {
                   this.notifyError(e);
                   item.loading = false;
                 });
+    },
+    saveFlames: function (item) {
+      this.save(item, "/api/save/flame/", "Flames saved to S3 storage: ");
+    },
+    saveDump: function (item) {
+      this.save(item, "/api/save/", "Dump saved to S3 storage: ");
     },
     notifyError: function (error) {
       this.$notify({

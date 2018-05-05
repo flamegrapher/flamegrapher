@@ -7,9 +7,8 @@
           <b-col>
               <b-table striped hover fixed :items="items" :fields="fields">
               <template slot="actions" slot-scope="row">
-                <b-btn size="sm" :href="`/api/dump/${row.item.pid}.${row.item.recording}.jfr`">Download</b-btn>
+                <b-btn size="sm" :href="`${row.item.url}`">Download</b-btn>
                 <b-btn size="sm" :href="`#/flames/${row.item.pid}/${row.item.recording}`">View flames</b-btn>
-                <b-btn size="sm" @click="saveDump(row.item)">Save to storage</b-btn>
               </template>
               </b-table>
           </b-col>
@@ -20,7 +19,7 @@
 <script>
 import SavesMixin from "./SavesMixin";
 export default {
-  name: "dumps",
+  name: "saves",
   mixins: [SavesMixin],
   data () {
     return {
@@ -42,11 +41,18 @@ export default {
     };
   },
   mounted () {
-    const url = "/api/dumps/";
+    const url = "/api/saves/";
     this.$http
       .get(url)
       .then(response => {
-        this.items = response.data;
+        response.data.forEach(element => {
+          const tokens = element.key.split(".");
+          var item = {};
+          item.pid = tokens[0];
+          item.recording = tokens[1];
+          item.url = element.url;
+          this.items.push(item);
+        });
         this.loading = false;
       })
       .catch(e => {

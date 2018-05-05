@@ -23,7 +23,7 @@
                   <b-btn :disabled="row.item.state === 'Recording'" @click="start(row.item)">Start</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="stop(row.item)">Stop</b-btn>
                   <b-btn :disabled="row.item.state === 'Not recording'" @click="dump(row.item)">Dump</b-btn>
-                  <b-btn size="sm" :disabled="!row.item.hasDump" @click="save(row.item)">Save</b-btn>
+                  <b-btn size="sm" :disabled="!row.item.hasDump" @click="saveDump(row.item)">Save</b-btn>
                 </b-button-group>
             </template>
             </b-table>
@@ -31,9 +31,9 @@
     </b-row>
     <b-row class="text-left">
         <b-col>
-          <a :href="`#/dumps`">
-            View all local dumps
-          </a>
+          <a :href="`#/dumps`">All local dumps</a>
+           | 
+          <a :href="`#/saves`">All remote storage dumps</a>
         </b-col>
     </b-row>
 </div>

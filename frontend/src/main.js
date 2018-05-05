@@ -5,6 +5,7 @@ import App from "./App.vue";
 import Home from "./Home.vue";
 import Dumps from "./Dumps.vue";
 import Flames from "./Flames.vue";
+import Saves from "./Saves.vue";
 import { FlowerSpinner } from "epic-spinners";
 import Notifications from "vue-notification";
 import axios from "axios";
@@ -19,7 +20,8 @@ Vue.prototype.$http = axios;
 const routes = [
   { path: "/", component: Home },
   { path: "/dumps", component: Dumps },
-  { path: "/flames/:pid/:recordingId", component: Flames }
+  { path: "/flames/:pid/:recording", component: Flames },
+  { path: "/saves", component: Saves }
 ];
 
 const router = new VueRouter({
