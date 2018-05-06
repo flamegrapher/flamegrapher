@@ -10,21 +10,16 @@
               <b-progress :value="100" variant="secondary" :animated="true" class="mb-3" v-show="row.item.loading"></b-progress>
               <div v-show="!row.item.loading">{{row.item.state}}</div>
             </template>
-            <template slot="recording" slot-scope="row">
-                <a :href="`#/flames/${row.item.pid}/${row.item.recording}`" v-if="row.item.hasDump">
-                {{row.item.recording}} (view)
-                </a>
-                <div v-else>
-                {{row.item.recording}}
-                </div>
-            </template>
             <template slot="actions" slot-scope="row">
-                <b-button-group size="sm">
-                  <b-btn :disabled="row.item.state === 'Recording'" @click="start(row.item)">Start</b-btn>
-                  <b-btn :disabled="row.item.state === 'Not recording'" @click="stop(row.item)">Stop</b-btn>
-                  <b-btn :disabled="row.item.state === 'Not recording'" @click="dump(row.item)">Dump</b-btn>
-                  <b-btn size="sm" :disabled="!row.item.hasDump" @click="saveDump(row.item)">Save</b-btn>
-                </b-button-group>
+                <b-dropdown size="sm" text="Choose here">
+                  <b-dropdown-item :disabled="row.item.state === 'Recording'" @click="start(row.item)">Start</b-dropdown-item>
+                  <b-dropdown-item :disabled="row.item.state === 'Not recording'" @click="stop(row.item)">Stop</b-dropdown-item>
+                  <b-dropdown-item :disabled="row.item.state === 'Not recording'" @click="dump(row.item)">Dump</b-dropdown-item>
+                  <b-dropdown-item size="sm" :disabled="!row.item.hasDump" @click="saveDump(row.item)">Save</b-dropdown-item>
+                </b-dropdown>
+            </template>
+            <template slot="view" slot-scope="row">
+              <flamegraph-dropdown :item="row.item" :disabled="!row.item.hasDump"></flamegraph-dropdown>
             </template>
             </b-table>
         </b-col>
@@ -65,7 +60,8 @@ export default {
           key: "recording",
           label: "Recording #"
         },
-        "actions"
+        "actions",
+        "view"
       ]
     };
   },

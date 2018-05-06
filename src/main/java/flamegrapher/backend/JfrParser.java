@@ -12,19 +12,19 @@ import com.oracle.jmc.common.IMCStackTrace;
 import com.oracle.jmc.common.IMemberAccessor;
 import com.oracle.jmc.common.item.IItem;
 import com.oracle.jmc.common.item.IItemCollection;
+import com.oracle.jmc.common.item.IItemIterable;
 import com.oracle.jmc.common.item.ItemFilters;
 import com.oracle.jmc.common.unit.IQuantity;
+import com.oracle.jmc.common.unit.UnitLookup;
 import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
 import com.oracle.jmc.flightrecorder.JfrAttributes;
 import com.oracle.jmc.flightrecorder.JfrLoaderToolkit;
+import com.oracle.jmc.flightrecorder.jdk.JdkAttributes;
+import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
 
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public class JfrParser {
-
-    private static final Logger logger = LoggerFactory.getLogger(JfrParser.class);
 
     public StackFrame toJson(File jfr, String... eventTypes) throws IOException, CouldNotLoadRecordingException {
         IItemCollection filtered = JfrLoaderToolkit.loadEvents(jfr)
@@ -34,46 +34,54 @@ public class JfrParser {
         filtered.forEach(events -> {
             IMemberAccessor<IMCStackTrace, IItem> accessor = events.getType()
                                                                    .getAccessor(EVENT_STACKTRACE.getKey());
-            IMemberAccessor<IQuantity, IItem> startTime = events.getType()
-                                                                .getAccessor(JfrAttributes.START_TIME.getKey());
-
-            IMemberAccessor<IQuantity, IItem> endTime = events.getType()
-                                                              .getAccessor(JfrAttributes.END_TIME.getKey());
-
-            if (startTime == null && endTime == null) {
-                return;
-            }
-
-            // When the event has only start or end time, it means that it's only an
-            // occurence, thus we set both values to the one that's available, i.e. not null.
-            if (endTime == null) {
-                endTime = startTime;
-            }
-            if (startTime == null) {
-                startTime = endTime;
-            }
 
             for (IItem item : events) {
                 Stack<String> stack = new Stack<>();
                 IMCStackTrace stackTrace = accessor.getMember(item);
-                if (startTime.getMember(item) == null || endTime.getMember(item) == null
-                        || stackTrace.getFrames() == null) {
+                if (stackTrace == null || stackTrace.getFrames() == null) {
                     continue;
                 }
-                long start = startTime.getMember(item)
-                                      .longValue();
-                long end = endTime.getMember(item)
-                                  .longValue();
                 stackTrace.getFrames()
                           .forEach(frame -> {
                               stack.push(getFrameName(frame));
                           });
-                long duration = end - start;
-                writer.processEvent(start, end, duration, stack, 1L);
+                Long value = getValue(events, item, eventTypes);
+                writer.processEvent(stack, value);
             }
         });
 
         return writer.getStackFrame();
+    }
+
+    /**
+     * Returns the value according to the event type. For most event types, we
+     * will only take into account the occurrence in itself. For example, Method
+     * CPU sample will only return 1, i.e. one occurence of that given stack
+     * trace while sampling. But for locks, we will look into the total time
+     * spent waiting for that lock. For allocation, we will look at the total
+     * amount of memory allocated. And so on.
+     * 
+     * @param events
+     */
+    private Long getValue(IItemIterable events, IItem item, String[] eventTypes) {
+
+        for (String eventType : eventTypes) {
+            if (JdkTypeIDs.MONITOR_ENTER.equals(eventType)) {
+                IMemberAccessor<IQuantity, IItem> accessor = events.getType()
+                                                                   .getAccessor(JfrAttributes.DURATION.getKey());
+                IQuantity duration = accessor.getMember(item);
+                return duration.clampedLongValueIn(UnitLookup.MILLISECONDS);
+
+            } else if (JdkTypeIDs.ALLOC_INSIDE_TLAB.equals(eventType)
+                    || JdkTypeIDs.ALLOC_OUTSIDE_TLAB.equals(eventType)) {
+                IMemberAccessor<IQuantity, IItem> accessor = events.getType()
+                                                                   .getAccessor(JdkAttributes.ALLOCATION_SIZE.getKey());
+                IQuantity allocationSize = accessor.getMember(item);
+                return allocationSize.clampedLongValueIn(UnitLookup.BYTES);
+            }
+        }
+        // For all other event types, simply return 1.
+        return 1L;
     }
 
     private String getFrameName(IMCFrame frame) {

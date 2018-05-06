@@ -18,7 +18,7 @@ export default {
                 });
     },
     saveFlames: function (item) {
-      this.save(item, "/api/save/flame/", "Flames saved to S3 storage: ");
+      this.save(item, "/api/save/flame/" + item.eventType + "/", "Flames saved to S3 storage: ");
     },
     saveDump: function (item) {
       this.save(item, "/api/save/", "Dump saved to S3 storage: ");

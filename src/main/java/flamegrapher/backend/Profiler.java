@@ -19,7 +19,7 @@ public interface Profiler {
     
     void stop(String pid, String recording, Future<Item> handler);
     
-    void flames(String pid, String recording, Future<StackFrame> handler);
+    void flames(String eventType, String pid, String recording, Future<StackFrame> handler);
 
     void save(String pid, String recording, Future<JsonObject> handler);
     
@@ -31,7 +31,7 @@ public interface Profiler {
 
     void flameFromStorage(String storageKey, Future<StackFrame> handler);
 
-    void saveFlame(String pid, String recording, Future<JsonObject> handler);
+    void saveFlame(String eventType, String pid, String recording, Future<JsonObject> handler);
 
     Future<Void> dumpFromLocal(String filename, RoutingContext rc);
 }

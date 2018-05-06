@@ -115,13 +115,16 @@ public class MainVerticle extends AbstractVerticle {
                   jfr.save(pid, recording, newFuture(rc));
               });
 
-        router.post("/api/save/flame/:pid/:recording")
+        router.post("/api/save/flame/:eventType/:pid/:recording")
               .handler(rc -> {
                   String pid = rc.request()
                                  .getParam("pid");
                   String recording = rc.request()
                                        .getParam("recording");
-                  jfr.saveFlame(pid, recording, newFuture(rc));
+                  String eventType = rc.request()
+                                       .getParam("eventType");
+
+                  jfr.saveFlame(eventType, pid, recording, newFuture(rc));
               });
 
         router.post("/api/stop/:pid/:recording")
@@ -133,13 +136,16 @@ public class MainVerticle extends AbstractVerticle {
                   jfr.stop(pid, recording, newFuture(rc));
               });
 
-        router.get("/api/flames/:pid/:recording")
+        router.get("/api/flames/:eventType/:pid/:recording")
               .handler(rc -> {
                   String pid = rc.request()
                                  .getParam("pid");
                   String recording = rc.request()
                                        .getParam("recording");
-                  jfr.flames(pid, recording, newFuture(rc));
+                  String eventType = rc.request()
+                                       .getParam("eventType");
+
+                  jfr.flames(eventType, pid, recording, newFuture(rc));
               });
 
         Integer port = config().getInteger("FLAMEGRAPHER_HTTP_PORT", 8080);
