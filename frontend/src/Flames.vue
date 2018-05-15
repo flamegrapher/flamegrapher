@@ -71,7 +71,8 @@ export default {
             .title("");
 
     this.chartState = chart;
-    const url = "/api/flames/" + this.$route.params.pid + "/" + this.$route.params.recording;
+    const params = this.$route.params;
+    const url = "/api/flames/" + params.eventType + "/" + params.pid + "/" + params.recording;
     this.$http.get(url)
             .then(response => {
               select(`#chart`)

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import io.vertx.core.json.Json;
 
 /**
- * This is a modified version of the JsonOutputWriter found on
+ * This is a simplified version of the JsonOutputWriter found on
  * https://github.com/chrishantha/jfr-flame-graph Create JSON output to be used
  * with d3-flame-graph. https://github.com/spiermar/d3-flame-graph
  * <p>
@@ -39,35 +39,14 @@ public class JsonOutputWriter {
     private static final String ROOT = "root";
 
     /**
-     * The data model for live json
-     */
-    private LiveRecording liveRecording = new LiveRecording();
-
-    /**
      * The data model for json
      */
     private StackFrame profile = new StackFrame(ROOT);
 
-    private boolean exportTimestamp;
-
-    private class LiveRecording {
-
-        Map<Long, StackFrame> profilesMap = new HashMap<>();
-
-        public StackFrame getProfile(long startTimestampSecEpoch) {
-            StackFrame profile = profilesMap.get(startTimestampSecEpoch);
-            if (profile == null) {
-                profile = new StackFrame(ROOT);
-                profilesMap.put(startTimestampSecEpoch, profile);
-            }
-            return profile;
-        }
-    }
-
     public static class StackFrame {
 
         String name;
-        int value = 0;
+        Long value = 0L;
         List<StackFrame> children = null;
         transient Map<String, StackFrame> childrenMap = new HashMap<>();
 
@@ -75,7 +54,7 @@ public class JsonOutputWriter {
             this.name = name;
         }
 
-        public StackFrame addFrame(String frameName) {
+        public StackFrame addFrame(String frameName, Long size) {
             if (children == null) {
                 children = new ArrayList<>();
             }
@@ -85,7 +64,7 @@ public class JsonOutputWriter {
                 childrenMap.put(frameName, frame);
                 children.add(frame);
             }
-            frame.value++;
+            frame.value += size;
             return frame;
         }
 
@@ -93,7 +72,7 @@ public class JsonOutputWriter {
             return name;
         }
 
-        public int getValue() {
+        public Long getValue() {
             return value;
         }
 
@@ -102,37 +81,21 @@ public class JsonOutputWriter {
         }
     }
 
-    public void initialize(boolean live) {
-        exportTimestamp = live;
-    }
-
-    public void processEvent(long startTimestamp, long endTimestamp, long duration, Stack<String> stack, Long size) {
-        StackFrame frame;
-        if (exportTimestamp) {
-            long startTimestampSecEpoch = TimeUnit.NANOSECONDS.toSeconds(startTimestamp);
-            frame = liveRecording.getProfile(startTimestampSecEpoch);
-        } else {
-            frame = profile;
-            frame.value++;
-        }
+    public void processEvent(Stack<String> stack, Long size) {
+        StackFrame frame = profile;
+        frame.value += size;
 
         while (!stack.empty()) {
-            frame = frame.addFrame(stack.pop());
+            frame = frame.addFrame(stack.pop(), size);
         }
     }
-    
+
     public StackFrame getStackFrame() {
         return this.profile;
     }
 
     public void writeOutput(BufferedWriter bufferedWriter) throws IOException {
-        String json = "";
-        if (exportTimestamp) {
-            json = Json.encode(this.liveRecording.profilesMap);
-        } else {
-            json = Json.encode(this.profile);
-        }
-
+        String json = Json.encode(this.profile);
         bufferedWriter.write(json);
     }
 }

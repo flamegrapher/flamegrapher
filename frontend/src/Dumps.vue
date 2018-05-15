@@ -5,11 +5,11 @@
         </b-row>
         <b-row>
           <b-col>
-              <b-table striped hover fixed :items="items" :fields="fields">
+              <b-table striped hover fixed :items="items" :fields="fields" v-show="!loading">
               <template slot="actions" slot-scope="row">
                 <b-btn size="sm" :href="`/api/dump/${row.item.pid}.${row.item.recording}.jfr`">Download</b-btn>
-                <b-btn size="sm" :href="`#/flames/${row.item.pid}/${row.item.recording}`">View flames</b-btn>
                 <b-btn size="sm" @click="saveDump(row.item)">Save to storage</b-btn>
+                <flamegraph-dropdown :item="row.item"></flamegraph-dropdown>
               </template>
               </b-table>
           </b-col>

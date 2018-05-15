@@ -42,7 +42,6 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 
 public class JavaFlightRecorder implements Profiler {
-    
     private static final Logger logger = LoggerFactory.getLogger(JavaFlightRecorder.class);
     private static final String APPLICATION_JSON_CHARSET_UTF_8 = "application/json; charset=utf-8";
     /**
@@ -251,15 +250,16 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     @Override
-    public void saveFlame(String pid, String recording, Future<JsonObject> handler) {
+    public void saveFlame(String eventType, String pid, String recording, Future<JsonObject> handler) {
         String filename = filename(pid, recording);
         Future<StackFrame> f = Future.future();
         f.setHandler(r -> {
             if (r.succeeded()) {
                 Buffer buf = Buffer.buffer(Json.encode(r.result()));
-                String key = Paths.get(filename)
-                                  .getFileName()
-                                  .toString();
+
+                String key = eventType + "." + Paths.get(filename)
+                                                    .getFileName()
+                                                    .toString();
                 s3Client.putObject(flamesBucket, key,
                         new PutObjectRequest(buf).withContentType(APPLICATION_JSON_CHARSET_UTF_8), response -> {
                             logger.info(response.getHeader());
@@ -272,7 +272,7 @@ public class JavaFlightRecorder implements Profiler {
                 handler.fail(r.cause());
             }
         });
-        generateFlame(filename, f);
+        generateFlame(eventType, filename, f);
     }
 
     @Override
@@ -351,16 +351,19 @@ public class JavaFlightRecorder implements Profiler {
         s3Client.getObject(flamesBucket, storageKey, new GetObjectRequest(), storageResult -> {
 
             String filename = filename("storage", storageKey);
-            generateFlame(filename, handler);
+            generateFlame("cpu", filename, handler);
+          
         }, e -> handler.fail(e));
     }
 
-    private void generateFlame(String filename, Future<StackFrame> handler) {
+    private void generateFlame(String eventType, String filename, Future<StackFrame> handler) {
         JfrParser parser = new JfrParser();
+        String[] events = getEvents(eventType);
         vertx.<StackFrame>executeBlocking(future -> {
             try {
-                logger.info("Processing file: " + filename);
-                StackFrame json = parser.toJson(new File(filename), JdkTypeIDs.EXECUTION_SAMPLE, NATIVE_METHOD_SAMPLE);
+
+                logger.info("Generating flames for event [" + eventType + "] file: " + filename);
+                StackFrame json = parser.toJson(new File(filename), events);
                 future.complete(json);
             } catch (IOException | CouldNotLoadRecordingException e) {
                 handler.fail(e);
@@ -373,6 +376,23 @@ public class JavaFlightRecorder implements Profiler {
                 handler.fail(result.cause());
             }
         });
+    }
+
+    private String[] getEvents(String eventType) {
+
+        if ("cpu".equalsIgnoreCase(eventType)) {
+            return new String[] { JdkTypeIDs.EXECUTION_SAMPLE, NATIVE_METHOD_SAMPLE };
+        } else if ("locks".equalsIgnoreCase(eventType)) {
+            return new String[] { JdkTypeIDs.MONITOR_ENTER };
+        } else if ("exceptions".equalsIgnoreCase(eventType)) {
+            return new String[] { JdkTypeIDs.ERRORS_THROWN, JdkTypeIDs.EXCEPTIONS_THROWN };
+        } else if ("alloc-tlab".equalsIgnoreCase(eventType)) {
+            return new String[] { JdkTypeIDs.ALLOC_INSIDE_TLAB };
+        } else if ("alloc-out-tlab".equalsIgnoreCase(eventType)) {
+            return new String[] { JdkTypeIDs.ALLOC_OUTSIDE_TLAB };
+        }
+
+        throw new IllegalArgumentException("Not a valid event type for generating a flamegraph: [" + eventType + "]");
     }
 
     @Override
@@ -400,9 +420,9 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     @Override
-    public void flames(String pid, String recording, Future<StackFrame> handler) {
+    public void flames(String eventType, String pid, String recording, Future<StackFrame> handler) {
         String filename = filename(pid, recording);
-        generateFlame(filename, handler);
+        generateFlame(eventType, filename, handler);
     }
 
     private <T> void jcmd(List<String> args, Future<Void> handler) {
