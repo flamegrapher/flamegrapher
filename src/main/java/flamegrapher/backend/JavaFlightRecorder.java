@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -23,6 +24,8 @@ import com.hubrick.vertx.s3.model.request.PutObjectRequest;
 import com.julienviet.childprocess.Process;
 import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
 import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
+
+import org.apache.commons.lang3.StringUtils;
 
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
 import flamegrapher.model.Item;
@@ -93,9 +96,7 @@ public class JavaFlightRecorder implements Profiler {
         // For each process, check if it's a HotSpot JDK (JFR is only available
         // for Hotspot for now).
         List<Future> jvms = new ArrayList<>();
-
         processesFuture.compose(processes -> {
-
             for (Item item : processes.items()
                                       .values()) {
                 String pid = item.getPid();
@@ -163,16 +164,41 @@ public class JavaFlightRecorder implements Profiler {
     public void start(String pid, Future<Item> handler) {
         // First run jcmd 8683 VM.unlock_commercial_features
         // Then run jcmd 8683 JFR.start
-        Future<Void> firstHandler = Future.future();
-        jcmd(asList(pid, "VM.unlock_commercial_features"), firstHandler);
-        firstHandler.setHandler(s -> {
-            if (s.succeeded()) {
-                jcmd(asList(pid, "JFR.start"), handler, Item::fromStart);
-            } else {
-                handler.fail(s.cause());
-            }
-        });
+        Future<Void> unlockFuture = Future.future();
+        jcmd(asList(pid, "VM.unlock_commercial_features"), unlockFuture);
 
+        Future<JVM> jvmVersionFuture = Future.future();
+        unlockFuture.compose(s -> {
+            // There could be custom settings, so we need to check the JDK
+            // version to
+            // see which one we should apply
+            jcmd(asList(pid, "VM.version"), jvmVersionFuture, JVM::fromVMVersion);
+        }, jvmVersionFuture);
+
+        Future<Void> startFuture = Future.future();
+        jvmVersionFuture.compose(version -> {
+            LinkedList<String> arguments = new LinkedList<>(asList(pid, "JFR.start"));
+            addSettingsIfPresent(arguments, version);
+            jcmd(arguments, handler, Item::fromStart);
+        }, startFuture);
+    }
+
+    /**
+     * Allows to run JFR recordings with different settings, e.g. to record
+     * exceptions and detailed allocations
+     */
+    private void addSettingsIfPresent(LinkedList<String> arguments, JVM version) {
+        if (version.getMajorVersion() > 8) {
+            String jdk9PlusSettings = config.getString("JFR_SETTINGS_JDK9_PLUS");
+            if (StringUtils.isNoneBlank(jdk9PlusSettings)) {
+                arguments.addLast("settings=" + jdk9PlusSettings);
+            }
+        } else {
+            String jdk7or8Settings = config.getString("JFR_SETTINGS_JDK7_OR_8");
+            if (StringUtils.isNotBlank(jdk7or8Settings)) {
+                arguments.addLast("settings=" + jdk7or8Settings);
+            }
+        }
     }
 
     @Override
@@ -198,7 +224,6 @@ public class JavaFlightRecorder implements Profiler {
                 json.put("path", filename);
                 return json;
             });
-
         }, handler);
     }
 
@@ -352,7 +377,7 @@ public class JavaFlightRecorder implements Profiler {
 
             String filename = filename("storage", storageKey);
             generateFlame("cpu", filename, handler);
-          
+
         }, e -> handler.fail(e));
     }
 
@@ -381,7 +406,9 @@ public class JavaFlightRecorder implements Profiler {
     private String[] getEvents(String eventType) {
 
         if ("cpu".equalsIgnoreCase(eventType)) {
-            return new String[] { JdkTypeIDs.EXECUTION_SAMPLE, NATIVE_METHOD_SAMPLE };
+            return new String[] { JdkTypeIDs.EXECUTION_SAMPLE };// ,
+                                                                // NATIVE_METHOD_SAMPLE
+                                                                // };
         } else if ("locks".equalsIgnoreCase(eventType)) {
             return new String[] { JdkTypeIDs.MONITOR_ENTER };
         } else if ("exceptions".equalsIgnoreCase(eventType)) {
@@ -430,6 +457,7 @@ public class JavaFlightRecorder implements Profiler {
     }
 
     private <T> void jcmd(List<String> args, Future<T> handler, Function<String, T> transformer) {
+        logger.info("Will execute JCMD with arguments: " + args);
         Process process = spawn(vertx, "jcmd", args);
         Future<String> processCompleteHandler = completeOnExit(handler, transformer);
         StringBuilder str = new StringBuilder();
