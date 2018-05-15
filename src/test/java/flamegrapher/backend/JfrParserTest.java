@@ -18,6 +18,7 @@ import flamegrapher.backend.JsonOutputWriter.StackFrame;
 public class JfrParserTest {
     @Test
     public void jdk8() throws IOException, CouldNotLoadRecordingException {
+
         StackFrame s = parse("58027.1.jfr", JdkTypeIDs.EXECUTION_SAMPLE);
         assertNotNull(s);
         assertThat(s.getChildren()
@@ -70,5 +71,4 @@ public class JfrParserTest {
         File jfr = new File(pathname);
         return jfr;
     }
-
 }

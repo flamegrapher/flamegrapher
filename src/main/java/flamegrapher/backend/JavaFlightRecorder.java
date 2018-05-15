@@ -42,7 +42,6 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 
 public class JavaFlightRecorder implements Profiler {
-
     private static final Logger logger = LoggerFactory.getLogger(JavaFlightRecorder.class);
     private static final String APPLICATION_JSON_CHARSET_UTF_8 = "application/json; charset=utf-8";
     /**
@@ -257,6 +256,7 @@ public class JavaFlightRecorder implements Profiler {
         f.setHandler(r -> {
             if (r.succeeded()) {
                 Buffer buf = Buffer.buffer(Json.encode(r.result()));
+
                 String key = eventType + "." + Paths.get(filename)
                                                     .getFileName()
                                                     .toString();
@@ -352,6 +352,7 @@ public class JavaFlightRecorder implements Profiler {
 
             String filename = filename("storage", storageKey);
             generateFlame("cpu", filename, handler);
+          
         }, e -> handler.fail(e));
     }
 
@@ -360,6 +361,7 @@ public class JavaFlightRecorder implements Profiler {
         String[] events = getEvents(eventType);
         vertx.<StackFrame>executeBlocking(future -> {
             try {
+
                 logger.info("Generating flames for event [" + eventType + "] file: " + filename);
                 StackFrame json = parser.toJson(new File(filename), events);
                 future.complete(json);

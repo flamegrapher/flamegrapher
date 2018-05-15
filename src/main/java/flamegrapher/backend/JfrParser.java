@@ -23,8 +23,12 @@ import com.oracle.jmc.flightrecorder.jdk.JdkAttributes;
 import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
 
 import flamegrapher.backend.JsonOutputWriter.StackFrame;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 public class JfrParser {
+
+    private static final Logger logger = LoggerFactory.getLogger(JfrParser.class);
 
     public StackFrame toJson(File jfr, String... eventTypes) throws IOException, CouldNotLoadRecordingException {
         IItemCollection filtered = JfrLoaderToolkit.loadEvents(jfr)
@@ -39,6 +43,7 @@ public class JfrParser {
                 Stack<String> stack = new Stack<>();
                 IMCStackTrace stackTrace = accessor.getMember(item);
                 if (stackTrace == null || stackTrace.getFrames() == null) {
+
                     continue;
                 }
                 stackTrace.getFrames()
