@@ -381,7 +381,7 @@ public class JavaFlightRecorder implements Profiler {
     private String[] getEvents(String eventType) {
 
         if ("cpu".equalsIgnoreCase(eventType)) {
-            return new String[] { JdkTypeIDs.EXECUTION_SAMPLE, NATIVE_METHOD_SAMPLE };
+            return new String[] { JdkTypeIDs.EXECUTION_SAMPLE };//, NATIVE_METHOD_SAMPLE };
         } else if ("locks".equalsIgnoreCase(eventType)) {
             return new String[] { JdkTypeIDs.MONITOR_ENTER };
         } else if ("exceptions".equalsIgnoreCase(eventType)) {
