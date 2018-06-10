@@ -69,10 +69,11 @@ public class JfrParser {
         for (String eventType : eventTypes) {
             if (JdkTypeIDs.MONITOR_ENTER.equals(eventType)) {
                 return getOrCalculateDuration(item, events);
+
             } else if (JdkTypeIDs.ALLOC_INSIDE_TLAB.equals(eventType)
-                || JdkTypeIDs.ALLOC_OUTSIDE_TLAB.equals(eventType)) {
+                    || JdkTypeIDs.ALLOC_OUTSIDE_TLAB.equals(eventType)) {
                 IMemberAccessor<IQuantity, IItem> accessor = events.getType()
-                    .getAccessor(JdkAttributes.ALLOCATION_SIZE.getKey());
+                                                                   .getAccessor(JdkAttributes.ALLOCATION_SIZE.getKey());
                 IQuantity allocationSize = accessor.getMember(item);
                 return allocationSize.clampedLongValueIn(UnitLookup.BYTES);
             }
@@ -81,28 +82,37 @@ public class JfrParser {
         return 1L;
     }
 
+    /**
+     * Calculates duration using start and end times when duration accessor is missing.
+     *
+     * @param item
+     * @param events
+     * @return
+     */
     private Long getOrCalculateDuration(IItem item, IItemIterable events) {
-        IMemberAccessor<IQuantity, IItem> accessor = events.getType()
-            .getAccessor(JfrAttributes.DURATION.getKey());
+        Long duration;
 
-        // Duration attribute is present - return value.
-        if (accessor != null) {
-            return accessor.getMember(item).clampedLongValueIn(UnitLookup.MILLISECONDS);
+        final IMemberAccessor<IQuantity, IItem> durationAccessor = events.getType()
+                                                                         .getAccessor(JfrAttributes.DURATION.getKey());
+
+        if (durationAccessor != null) {
+            duration = durationAccessor.getMember(item).clampedLongValueIn(UnitLookup.MILLISECONDS);
+
+        } else {
+            final IMemberAccessor<IQuantity, IItem> startAccessor = events.getType()
+                                                                          .getAccessor(JfrAttributes.START_TIME.getKey());
+            final IMemberAccessor<IQuantity, IItem> endAccessor = events.getType()
+                                                                          .getAccessor(JfrAttributes.END_TIME.getKey());
+
+            if (startAccessor != null && endAccessor != null) {
+                duration = endAccessor.getMember(item).subtract(startAccessor.getMember(item))
+                                                      .clampedLongValueIn(UnitLookup.MILLISECONDS);
+            } else {
+                throw new ParserException("Event duration is unknown!");
+            }
         }
 
-        // Duration attribute is missing - calculate it using event start and end times.
-        final IMemberAccessor<IQuantity, IItem> startAccessor = events.getType()
-            .getAccessor(JfrAttributes.START_TIME.getKey());
-        final IMemberAccessor<IQuantity, IItem> endAccessor = events.getType()
-            .getAccessor(JfrAttributes.END_TIME.getKey());
-
-        if (startAccessor != null && endAccessor != null) {
-            return endAccessor.getMember(item).subtract(startAccessor.getMember(item))
-                .clampedLongValueIn(UnitLookup.MILLISECONDS);
-        }
-
-        // Can't assume duration of event - throw exception.
-        throw new ParserException("Event  duration unknown!");
+        return duration;
     }
 
     private String getFrameName(IMCFrame frame) {
@@ -112,9 +122,9 @@ public class JfrParser {
         StringBuilder methodBuilder = new StringBuilder();
         IMCMethod method = frame.getMethod();
         methodBuilder.append(method.getType()
-            .getFullName())
-            .append("#")
-            .append(method.getMethodName());
+                                   .getFullName())
+                     .append("#")
+                     .append(method.getMethodName());
 
         if (!ignoreLineNumbers) {
             methodBuilder.append(":");
