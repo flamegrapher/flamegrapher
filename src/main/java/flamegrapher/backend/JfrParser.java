@@ -28,12 +28,12 @@ public class JfrParser {
 
     public StackFrame toJson(File jfr, String... eventTypes) throws IOException, CouldNotLoadRecordingException {
         IItemCollection filtered = JfrLoaderToolkit.loadEvents(jfr)
-                                                   .apply(ItemFilters.type(eventTypes));
+            .apply(ItemFilters.type(eventTypes));
 
         JsonOutputWriter writer = new JsonOutputWriter();
         filtered.forEach(events -> {
             IMemberAccessor<IMCStackTrace, IItem> accessor = events.getType()
-                                                                   .getAccessor(EVENT_STACKTRACE.getKey());
+                .getAccessor(EVENT_STACKTRACE.getKey());
 
             for (IItem item : events) {
                 Stack<String> stack = new Stack<>();
@@ -43,9 +43,9 @@ public class JfrParser {
                     continue;
                 }
                 stackTrace.getFrames()
-                          .forEach(frame -> {
-                              stack.push(getFrameName(frame));
-                          });
+                    .forEach(frame -> {
+                        stack.push(getFrameName(frame));
+                    });
                 Long value = getValue(events, item, eventTypes);
                 writer.processEvent(stack, value);
             }
@@ -61,28 +61,48 @@ public class JfrParser {
      * trace while sampling. But for locks, we will look into the total time
      * spent waiting for that lock. For allocation, we will look at the total
      * amount of memory allocated. And so on.
-     * 
+     *
      * @param events
      */
     private Long getValue(IItemIterable events, IItem item, String[] eventTypes) {
 
         for (String eventType : eventTypes) {
             if (JdkTypeIDs.MONITOR_ENTER.equals(eventType)) {
-                IMemberAccessor<IQuantity, IItem> accessor = events.getType()
-                                                                   .getAccessor(JfrAttributes.DURATION.getKey());
-                IQuantity duration = accessor.getMember(item);
-                return duration.clampedLongValueIn(UnitLookup.MILLISECONDS);
-
+                return getOrCalculateDuration(item, events);
             } else if (JdkTypeIDs.ALLOC_INSIDE_TLAB.equals(eventType)
-                    || JdkTypeIDs.ALLOC_OUTSIDE_TLAB.equals(eventType)) {
+                || JdkTypeIDs.ALLOC_OUTSIDE_TLAB.equals(eventType)) {
                 IMemberAccessor<IQuantity, IItem> accessor = events.getType()
-                                                                   .getAccessor(JdkAttributes.ALLOCATION_SIZE.getKey());
+                    .getAccessor(JdkAttributes.ALLOCATION_SIZE.getKey());
                 IQuantity allocationSize = accessor.getMember(item);
                 return allocationSize.clampedLongValueIn(UnitLookup.BYTES);
             }
         }
         // For all other event types, simply return 1.
         return 1L;
+    }
+
+    private Long getOrCalculateDuration(IItem item, IItemIterable events) {
+        IMemberAccessor<IQuantity, IItem> accessor = events.getType()
+            .getAccessor(JfrAttributes.DURATION.getKey());
+
+        // Duration attribute is present - return value.
+        if (accessor != null) {
+            return accessor.getMember(item).clampedLongValueIn(UnitLookup.MILLISECONDS);
+        }
+
+        // Duration attribute is missing - calculate it using event start and end times.
+        final IMemberAccessor<IQuantity, IItem> startAccessor = events.getType()
+            .getAccessor(JfrAttributes.START_TIME.getKey());
+        final IMemberAccessor<IQuantity, IItem> endAccessor = events.getType()
+            .getAccessor(JfrAttributes.END_TIME.getKey());
+
+        if (startAccessor != null && endAccessor != null) {
+            return endAccessor.getMember(item).subtract(startAccessor.getMember(item))
+                .clampedLongValueIn(UnitLookup.MILLISECONDS);
+        }
+
+        // Can't assume duration of event - throw exception.
+        throw new ParserException("Event  duration unknown!");
     }
 
     private String getFrameName(IMCFrame frame) {
@@ -92,9 +112,9 @@ public class JfrParser {
         StringBuilder methodBuilder = new StringBuilder();
         IMCMethod method = frame.getMethod();
         methodBuilder.append(method.getType()
-                                   .getFullName())
-                     .append("#")
-                     .append(method.getMethodName());
+            .getFullName())
+            .append("#")
+            .append(method.getMethodName());
 
         if (!ignoreLineNumbers) {
             methodBuilder.append(":");
