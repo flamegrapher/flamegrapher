@@ -72,21 +72,28 @@ export default {
 
     this.chartState = chart;
     const params = this.$route.params;
-    const url = "/api/flames/" + params.eventType + "/" + params.pid + "/" + params.recording;
-    this.$http.get(url)
-            .then(response => {
-              select(`#chart`)
-                    .datum(response.data)
-                    .call(chart);
-              this.loading = false;
-            }).catch(error => {
-              this.$notify({
-                title: error.message,
-                text: error.response.data,
-                type: "error",
-                duration: 10000
+    if (params.flameJsonData !== undefined) {
+      select(`#chart`)
+            .datum(response.flameJsonData)
+            .call(chart);
+      this.loading = false;
+    } else {
+      const url = "/api/flames/" + params.eventType + "/" + params.pid + "/" + params.recording;
+      this.$http.get(url)
+              .then(response => {
+                select(`#chart`)
+                      .datum(response.data)
+                      .call(chart);
+                this.loading = false;
+              }).catch(error => {
+                this.$notify({
+                  title: error.message,
+                  text: error.response.data,
+                  type: "error",
+                  duration: 10000
+                });
               });
-            });
+    }
   }
 };
 </script>

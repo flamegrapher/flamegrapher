@@ -29,6 +29,8 @@
           <a :href="`#/dumps`">All local dumps</a>
            | 
           <a :href="`#/saves`">All remote storage dumps</a>
+           | 
+          <a :href="`#/upload`">Upload file</a>
         </b-col>
     </b-row>
 </div>

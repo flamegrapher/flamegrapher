@@ -7,6 +7,7 @@ import Dumps from "./Dumps.vue";
 import Flames from "./Flames.vue";
 import Saves from "./Saves.vue";
 import Flamegraph from "./Flamegraph.vue";
+import Upload from "./Upload.vue";
 import { FlowerSpinner } from "epic-spinners";
 import Notifications from "vue-notification";
 import axios from "axios";
@@ -22,7 +23,8 @@ const routes = [
   { path: "/", component: Home },
   { path: "/dumps", component: Dumps },
   { path: "/flames/:eventType/:pid/:recording", component: Flames },
-  { path: "/saves", component: Saves }
+  { path: "/saves", component: Saves },
+  { path: "/upload", component: Upload}
 ];
 
 const router = new VueRouter({
