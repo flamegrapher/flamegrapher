@@ -44,7 +44,9 @@ Finally, flamegraphs themselves were created by [Brendan Gregg](http://www.brend
 
 Flamegrapher's configuration relies on [Vertx configuration module](https://vertx.io/docs/vertx-config/java/). So, you can use a json configuration file, system variable or environment variables for configuration. All settings are optional, if S3 settings are not available you will not be able use the functionality. For everything else there are sensible defaults.
 
+* `FLAMEGRAPHER_EPHEMERAL_PORT`: If set to `true` listens on ephemeral port. Overrides `FLAMEGRAHPER_HTTP_PORT`;
 * `FLAMEGRAPHER_HTTP_PORT`: HTTP listening port. Defaults to "8080";
+* `FLAMEGRAPHER_HTTP_SERVER`: Network interface on which server listens. Defaults to "0.0.0.0" which means all interfaces;
 * `FLAMEGRAPHER_S3_SERVER`: S3 server URL;
 * `FLAMEGRAPHER_S3_PORT`: S3 port;
 * `FLAMEGRAPHER_S3_ACCESS_KEY`: Access key;

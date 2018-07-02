@@ -42,6 +42,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.RoutingContext;
 
 public class JavaFlightRecorder implements Profiler {
@@ -245,6 +246,21 @@ public class JavaFlightRecorder implements Profiler {
 
     private String workingDir() {
         return config.getString("FLAMEGRAPHER_JFR_DUMP_PATH", "/tmp/flamegrapher/");
+    }
+    
+    public void storeFileLocally(FileUpload fileUpload, Future<String> handler) {
+	vertx.fileSystem().move(fileUpload.uploadedFileName(), workingDir() + "uploaded-" + fileUpload.fileName(), asyncFile -> {
+	    if (asyncFile.succeeded()) {
+		handler.complete("uploaded-" + fileUpload.fileName());
+	    } else {
+		handler.fail(asyncFile.cause());
+	    }
+	    vertx.fileSystem().delete(fileUpload.uploadedFileName(), asyncDelete -> {
+		    if (!asyncFile.succeeded()) {
+			logger.error("Unable to delete ", fileUpload.uploadedFileName());
+		    };
+	    });
+	});
     }
 
     @Override
