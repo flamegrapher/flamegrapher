@@ -12,10 +12,12 @@
 		<vertx.version>3.5.2</vertx.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<frontend.directory>frontend</frontend.directory>
+		<jmc.version>6.0.0.173920</jmc.version>
 	</properties>
 
 	<build>
 		<plugins>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -127,8 +129,89 @@
 					</execution>
 				</executions>
 			</plugin>
+
+
 		</plugins>
 	</build>
+
+	<profiles>
+		<!-- UNIX specific executions ******************************************************** -->
+		<profile>
+			<id>unix</id>
+			<!-- Auto activated on UNIX platform -->
+			<activation>
+				<os>
+					<family>unix</family>
+				</os>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-clean-plugin</artifactId>
+						<version>3.1.0</version>
+						<configuration>
+							<filesets>
+								<fileset>
+									<directory>.</directory>
+									<includes>
+										<include>run.sh</include>
+									</includes>
+									<followSymlinks>false</followSymlinks>
+								</fileset>
+							</filesets>
+							<failOnError>false</failOnError>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>build-helper-maven-plugin</artifactId>
+						<version>3.0.0</version>
+						<executions>
+							<execution>
+								<id>script-filtering</id>
+								<phase>generate-resources</phase>
+								<goals>
+									<goal>add-resource</goal>
+								</goals>
+								<configuration>
+									<resources>
+										<resource>
+											<directory>src/main/resources</directory>
+											<targetPath>${basedir}</targetPath>
+											<filtering>true</filtering>
+											<includes>
+												<include>*.sh</include>
+											</includes>
+										</resource>
+									</resources>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>1.8</version>
+						<executions>
+							<execution>
+								<id>build</id>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<chmod file="${basedir}/*.sh" perm="ugo+rx"/>
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<!-- End of linux specific executions ******************************************************** -->
+	</profiles>
 
 	<dependencies>
 		<dependency>
