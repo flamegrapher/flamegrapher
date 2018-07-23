@@ -16,7 +16,5 @@ while getopts 'p:' option; do
   esac
 done
 
-export FLAMEGRAPHER_HTTP_PORT=$HTTP_PORT
-
 # This script will be filtered, copied to this project basedir, and made executable
-java -jar target/flamegrapher-${version}-fat.jar
+java -jar -DFLAMEGRAPHER_HTTP_PORT=$HTTP_PORT target/flamegrapher-${version}-fat.jar
