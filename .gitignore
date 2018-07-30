@@ -169,4 +169,12 @@ nbdist/
 !.vscode/extensions.json
 
 # End of https://www.gitignore.io/api/macos,maven,eclipse,netbeans,intellij+iml,visualstudiocode
+
+# Maven output
 /target/
+
+# Miscalleneous
+/run.sh
+frontend/package-lock\.json
+frontend/yarn\.lock
+/jmc_version.properties
