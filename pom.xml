@@ -114,7 +114,7 @@
 					<execution>
 						<id>copy-resources</id>
 						<!-- here the phase you need -->
-						<phase>validate</phase>
+						<phase>process-resources</phase>
 						<goals>
 							<goal>copy-resources</goal>
 						</goals>
