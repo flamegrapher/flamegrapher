@@ -165,21 +165,25 @@ public class JavaFlightRecorder implements Profiler {
     public void start(String pid, Future<Item> handler) {
         // First run jcmd 8683 VM.unlock_commercial_features
         // Then run jcmd 8683 JFR.start
-        Future<Void> unlockFuture = Future.future();
-        jcmd(asList(pid, "VM.unlock_commercial_features"), unlockFuture);
 
         Future<JVM> jvmVersionFuture = Future.future();
-        unlockFuture.compose(s -> {
-            // There could be custom settings, so we need to check the JDK
-            // version to
-            // see which one we should apply
-            jcmd(asList(pid, "VM.version"), jvmVersionFuture, JVM::fromVMVersion);
-        }, jvmVersionFuture);
+        jcmd(asList(pid, "VM.version"), jvmVersionFuture, JVM::fromVMVersion);
+
+        Future<Void> unlockFuture = Future.future();
+        LinkedList<String> arguments = new LinkedList<>(asList(pid, "JFR.start"));
+        jvmVersionFuture.compose(version -> {
+            // JFR is not a commercial feature from Java 11 onwards
+            addSettingsIfPresent(arguments, version);
+            if (version.getMajorVersion() < 11) {
+                jcmd(asList(pid, "VM.unlock_commercial_features"), unlockFuture);
+            }
+            else {
+                unlockFuture.complete();
+            }
+        }, unlockFuture);
 
         Future<Void> startFuture = Future.future();
-        jvmVersionFuture.compose(version -> {
-            LinkedList<String> arguments = new LinkedList<>(asList(pid, "JFR.start"));
-            addSettingsIfPresent(arguments, version);
+        unlockFuture.compose(s -> {
             jcmd(arguments, handler, Item::fromStart);
         }, startFuture);
     }
