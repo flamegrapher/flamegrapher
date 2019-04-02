@@ -117,8 +117,8 @@ public class JavaFlightRecorder implements Profiler {
                 if (h.succeeded()) {
                     for (Future f : jvms) {
                         JVM jvm = (JVM) f.result();
-                        // Only HotSpot ships with JFR for now
-                        if (JVMType.HOTSPOT.equals(jvm.getType())) {
+                        // Java 11 and newer, as well as older Hotspots, ship with JFR
+                        if (JVMType.HOTSPOT.equals(jvm.getType()) || jvm.getMajorVersion() >= 11) {
                             Future<Item> statusCheck = Future.future();
                             jfrChecks.add(statusCheck);
                             // Will retrieve the status, i.e. recording or not
