@@ -53,6 +53,8 @@ Flamegrapher's configuration relies on [Vertx configuration module](https://vert
 * `FLAMEGRAPHER_S3_SECRET_KEY`: Secret key;
 * `FLAMEGRAPHER_S3_DUMPS_BUCKET`: S3 bucket for dumps. Defaults to "dumps";
 * `FLAMEGRAPHER_S3_FLAMES_BUCKET`: S3 bucket for flames. Defaults to "flames";
+* `FLAMEGRAPHER_S3_DUMPS_PREFIX`: Prefix for objects stored in the dumps bucket. Allows one bucket to be used for dumps and flames. Defaults to ""
+* `FLAMEGRAPHER_S3_FLAMES_PREFIX`: Prefix for objects stored in the flames bucket. Allows one bucket to be used for dumps and flames. Defaults to ""
 * `FLAMEGRAPHER_JFR_DUMP_PATH`: Base directory for saving JFR dumps locally. Defaults to "/tmp/flamegrapher";
 * `JFR_SETTINGS_JDK9_PLUS`: [Optional] Custom settings for JDK 9+;
 * `JFR_SETTINGS_JDK7_OR_8`: [Optional] Custom settings for JDK 7 or 8.
