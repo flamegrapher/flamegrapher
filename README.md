@@ -48,6 +48,7 @@ Flamegrapher's configuration relies on [Vertx configuration module](https://vert
 * `FLAMEGRAPHER_HTTP_PORT`: HTTP listening port. Defaults to "8080";
 * `FLAMEGRAPHER_HTTP_SERVER`: Network interface on which server listens. Defaults to "0.0.0.0" which means all interfaces;
 * `FLAMEGRAPHER_S3_SERVER`: S3 server URL;
+* `FLAMEGRAPHER_S3_REGION`: S3 region - defaults to us-east-1
 * `FLAMEGRAPHER_S3_PORT`: S3 port;
 * `FLAMEGRAPHER_S3_ACCESS_KEY`: Access key;
 * `FLAMEGRAPHER_S3_SECRET_KEY`: Secret key;

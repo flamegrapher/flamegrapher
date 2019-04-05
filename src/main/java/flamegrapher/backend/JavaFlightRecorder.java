@@ -70,7 +70,7 @@ public class JavaFlightRecorder implements Profiler {
         this.vertx = vertx;
         this.config = config;
         s3ClientOptions = new S3ClientOptions().setHostnameOverride(config.getString("FLAMEGRAPHER_S3_SERVER"))
-                                               .setAwsRegion("us-east-1")
+                                               .setAwsRegion(config.getString("FLAMEGRAPHER_S3_REGION", "us-east-1"))
                                                .setAwsServiceName("s3")
                                                .setConnectTimeout(30000)
                                                .setGlobalTimeoutMs(30000L)
