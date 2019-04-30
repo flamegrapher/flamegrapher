@@ -142,6 +142,8 @@ public class JavaFlightRecorder implements Profiler {
                 JsonArray results = new JsonArray();
                 for (Future f : jfrChecks) {
                     Item status = (Item) f.result();
+                    logger.info(status);
+                    logger.info("Processes: " + processes);
                     Item item = processes.items()
                                          .get(status.getPid());
                     item.setState(status.getState());
