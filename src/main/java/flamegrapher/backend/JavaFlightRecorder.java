@@ -22,8 +22,8 @@ import com.hubrick.vertx.s3.model.request.GetBucketRequest;
 import com.hubrick.vertx.s3.model.request.GetObjectRequest;
 import com.hubrick.vertx.s3.model.request.PutObjectRequest;
 import com.julienviet.childprocess.Process;
-import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
-import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
+import org.openjdk.jmc.flightrecorder.CouldNotLoadRecordingException;
+import org.openjdk.jmc.flightrecorder.jdk.JdkTypeIDs;
 
 import org.apache.commons.lang3.StringUtils;
 

@@ -252,14 +252,14 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.oracle.jmc</groupId>
-			<artifactId>com.oracle.jmc.common</artifactId>
+			<groupId>org.openjdk.jmc</groupId>
+			<artifactId>org.openjdk.jmc.common</artifactId>
 			<version>${jmc.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>com.oracle.jmc</groupId>
-			<artifactId>com.oracle.jmc.flightrecorder</artifactId>
+			<groupId>org.openjdk.jmc</groupId>
+			<artifactId>org.openjdk.jmc.flightrecorder</artifactId>
 			<version>${jmc.version}</version>
 		</dependency>
 

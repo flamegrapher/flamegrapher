@@ -7,8 +7,8 @@ import static org.junit.Assert.assertThat;
 import java.io.File;
 import java.io.IOException;
 
-import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
-import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
+import org.openjdk.jmc.flightrecorder.CouldNotLoadRecordingException;
+import org.openjdk.jmc.flightrecorder.jdk.JdkTypeIDs;
 
 import org.junit.Test;
 
