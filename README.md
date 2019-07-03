@@ -48,11 +48,14 @@ Flamegrapher's configuration relies on [Vertx configuration module](https://vert
 * `FLAMEGRAPHER_HTTP_PORT`: HTTP listening port. Defaults to "8080";
 * `FLAMEGRAPHER_HTTP_SERVER`: Network interface on which server listens. Defaults to "0.0.0.0" which means all interfaces;
 * `FLAMEGRAPHER_S3_SERVER`: S3 server URL;
+* `FLAMEGRAPHER_S3_REGION`: S3 region - defaults to us-east-1
 * `FLAMEGRAPHER_S3_PORT`: S3 port;
 * `FLAMEGRAPHER_S3_ACCESS_KEY`: Access key;
 * `FLAMEGRAPHER_S3_SECRET_KEY`: Secret key;
 * `FLAMEGRAPHER_S3_DUMPS_BUCKET`: S3 bucket for dumps. Defaults to "dumps";
 * `FLAMEGRAPHER_S3_FLAMES_BUCKET`: S3 bucket for flames. Defaults to "flames";
+* `FLAMEGRAPHER_S3_DUMPS_PREFIX`: Prefix for objects stored in the dumps bucket. Allows one bucket to be used for dumps and flames. Defaults to ""
+* `FLAMEGRAPHER_S3_FLAMES_PREFIX`: Prefix for objects stored in the flames bucket. Allows one bucket to be used for dumps and flames. Defaults to ""
 * `FLAMEGRAPHER_JFR_DUMP_PATH`: Base directory for saving JFR dumps locally. Defaults to "/tmp/flamegrapher";
 * `JFR_SETTINGS_JDK9_PLUS`: [Optional] Custom settings for JDK 9+;
 * `JFR_SETTINGS_JDK7_OR_8`: [Optional] Custom settings for JDK 7 or 8.
