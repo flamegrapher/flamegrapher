@@ -178,3 +178,4 @@ nbdist/
 frontend/package-lock\.json
 frontend/yarn\.lock
 /jmc_version.properties
+pom.xml-e
