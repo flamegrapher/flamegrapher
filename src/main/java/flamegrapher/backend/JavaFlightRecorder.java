@@ -22,8 +22,8 @@ import com.hubrick.vertx.s3.model.request.GetBucketRequest;
 import com.hubrick.vertx.s3.model.request.GetObjectRequest;
 import com.hubrick.vertx.s3.model.request.PutObjectRequest;
 import com.julienviet.childprocess.Process;
-import com.oracle.jmc.flightrecorder.CouldNotLoadRecordingException;
-import com.oracle.jmc.flightrecorder.jdk.JdkTypeIDs;
+import org.openjdk.jmc.flightrecorder.CouldNotLoadRecordingException;
+import org.openjdk.jmc.flightrecorder.jdk.JdkTypeIDs;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -121,8 +121,8 @@ public class JavaFlightRecorder implements Profiler {
                 if (h.succeeded()) {
                     for (Future f : jvms) {
                         JVM jvm = (JVM) f.result();
-                        // Only HotSpot ships with JFR for now
-                        if (JVMType.HOTSPOT.equals(jvm.getType())) {
+                        // Java 11 and newer, as well as older Hotspots, ship with JFR
+                        if (JVMType.HOTSPOT.equals(jvm.getType()) || jvm.getMajorVersion() >= 11) {
                             Future<Item> statusCheck = Future.future();
                             jfrChecks.add(statusCheck);
                             // Will retrieve the status, i.e. recording or not
@@ -146,6 +146,8 @@ public class JavaFlightRecorder implements Profiler {
                 JsonArray results = new JsonArray();
                 for (Future f : jfrChecks) {
                     Item status = (Item) f.result();
+                    logger.info(status);
+                    logger.info("Processes: " + processes);
                     Item item = processes.items()
                                          .get(status.getPid());
                     item.setState(status.getState());
@@ -169,21 +171,25 @@ public class JavaFlightRecorder implements Profiler {
     public void start(String pid, Future<Item> handler) {
         // First run jcmd 8683 VM.unlock_commercial_features
         // Then run jcmd 8683 JFR.start
-        Future<Void> unlockFuture = Future.future();
-        jcmd(asList(pid, "VM.unlock_commercial_features"), unlockFuture);
 
         Future<JVM> jvmVersionFuture = Future.future();
-        unlockFuture.compose(s -> {
-            // There could be custom settings, so we need to check the JDK
-            // version to
-            // see which one we should apply
-            jcmd(asList(pid, "VM.version"), jvmVersionFuture, JVM::fromVMVersion);
-        }, jvmVersionFuture);
+        jcmd(asList(pid, "VM.version"), jvmVersionFuture, JVM::fromVMVersion);
+
+        Future<Void> unlockFuture = Future.future();
+        LinkedList<String> arguments = new LinkedList<>(asList(pid, "JFR.start"));
+        jvmVersionFuture.compose(version -> {
+            // JFR is not a commercial feature from Java 11 onwards
+            addSettingsIfPresent(arguments, version);
+            if (version.getMajorVersion() < 11) {
+                jcmd(asList(pid, "VM.unlock_commercial_features"), unlockFuture);
+            }
+            else {
+                unlockFuture.complete();
+            }
+        }, unlockFuture);
 
         Future<Void> startFuture = Future.future();
-        jvmVersionFuture.compose(version -> {
-            LinkedList<String> arguments = new LinkedList<>(asList(pid, "JFR.start"));
-            addSettingsIfPresent(arguments, version);
+        unlockFuture.compose(s -> {
             jcmd(arguments, handler, Item::fromStart);
         }, startFuture);
     }
