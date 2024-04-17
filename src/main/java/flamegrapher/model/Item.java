@@ -6,12 +6,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 public class Item {
 
+    private static final Logger logger = LoggerFactory.getLogger(Item.class);
     /** Matcher for process status w.r.t. JFR */
     private static final Pattern STATUS = compile(
-            "(?<pid>[0-9]*):.*(recording=(?<recordingId>[0-9]*) name|No available recordings|Java Flight Recorder not enabled)",
+            "(?<pid>[0-9]*):.*(?:[Rr]ecording[= ](?<recordingId>[0-9]*):? name|No available recordings|Java Flight Recorder not enabled)",
             Pattern.DOTALL);
 
     /** Matcher for recording start output */
@@ -62,6 +65,11 @@ public class Item {
         return name;
     }
 
+    @Override
+    public String toString() {
+        return String.format(pid + "(" + name + ") " + state);
+    }
+
     /**
      * <pre>
      *   8683:
@@ -103,6 +111,9 @@ public class Item {
                 i.setState(State.NOT_RECORDING);
                 i.setRecordingNumber(Item.NOT_APPLICABLE);
             }
+        }
+        if (i == null) {
+            logger.error("Didn't match status " + status);
         }
         return i;
     }
